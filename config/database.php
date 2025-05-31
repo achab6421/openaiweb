@@ -1,0 +1,16 @@
+<?php
+define('DB_SERVER', 'localhost');
+define('DB_USERNAME', 'root');
+define('DB_PASSWORD', '');
+define('DB_NAME', 'python_teaching');
+
+// 嘗試連接到數據庫
+$conn = new mysqli(DB_SERVER, DB_USERNAME, DB_PASSWORD, DB_NAME);
+
+// 檢查連接
+if ($conn->connect_error) {
+    die("連接失敗: " . $conn->connect_error);
+}
+
+$conn->query("SET NAMES 'utf8'");
+?>
