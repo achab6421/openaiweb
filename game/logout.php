@@ -18,6 +18,6 @@ if (ini_get("session.use_cookies")) {
 session_destroy();
 
 // 重定向到登入頁面
-header("location: login.php");
+header("location: index.php");
 exit;
 ?>
