@@ -53,17 +53,83 @@ if($_SERVER["REQUEST_METHOD"] === "POST") {
     }
 }
 
-// 定義你要傳給 Python 的參數
+// 定義你要傳給 OpenAI 的參數
 $question_type = $question["question_type"];
 $content = $question["content"];
 
-// 組合命令列，請記得路徑改成你 Python 程式的實際位置
-$cmd = escapeshellcmd(command: "python C:\\xampp\\htdocs\\ai\\question_ai.py " . escapeshellarg($question_type) . " " . escapeshellarg($content));
+// 讀取 .env 並取得 OPENAI_API_KEY_11
+$dotenv_path = dirname(__DIR__, 2) . '/.env';
+$env = parse_ini_file($dotenv_path, false, INI_SCANNER_RAW);
+$OPENAI_API_KEY = isset($env['OPENAI_API_KEY_11']) ? trim($env['OPENAI_API_KEY_11'], "\"' ") : '';
 
-// 執行指令並取得輸出
-$output = shell_exec($cmd);
+// 組合 prompt
+$prompt = "($question_type)$content";
 
-// 印出 Python 程式回傳的結果
+// OpenAI API 請求
+$system_prompt = <<<EOT
+你是 Python 的教學助手，僅使用 Python 語法來解題，不使用其他程式語言。
+
+請根據題目類型直接回答，**不要重複題目內容，也不要加任何說明**。
+
+若為選擇題，請提供：
+(A) ...
+(B) ...
+(C) ...
+(D) ...
+正解:X
+
+若為排序題，請遵守以下規則：
+- 正確邏輯順序為 1→2→3→4（程式碼執行順序）
+- 請**將段落編號（1、2、3、4）打亂順序**後輸出，且**不能按照 1→2→3→4 順序呈現**
+- 每段編號前面仍標示原本的編號，例如 `3:`、`1:`、`4:`、`2:`
+- 若有註解（以 `#` 開頭），必須**放在對應程式碼的前一段**
+- 註解本身算一段，程式碼算一段（例如：註解 1 段 + 程式碼 1 段 = 2 段）
+- 總共仍然要輸出四段
+- 每段獨立換行，不合併行
+
+範例：
+1: # 優先運算，計算乘法再加法
+2: result = 5 + 3 * 2
+3: # 結果將存於 result 變數
+4: print(result)
+
+只允許使用 Python 語法，禁止使用其他語言或額外說明文字。
+EOT;
+
+$payload = [
+    "model" => "gpt-4o-mini",
+    "messages" => [
+        [
+            "role" => "system",
+            "content" => $system_prompt
+        ],
+        [
+            "role" => "user",
+            "content" => $prompt
+        ]
+    ]
+];
+
+$ch = curl_init("https://api.openai.com/v1/chat/completions");
+curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+curl_setopt($ch, CURLOPT_HTTPHEADER, [
+    "Content-Type: application/json",
+    "Authorization: Bearer " . $OPENAI_API_KEY
+]);
+curl_setopt($ch, CURLOPT_POST, true);
+curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
+$response = curl_exec($ch);
+curl_close($ch);
+
+$output = "";
+if ($response) {
+    $data = json_decode($response, true);
+    if (isset($data['choices'][0]['message']['content'])) {
+        $output = $data['choices'][0]['message']['content'];
+    }
+}
+
+// 印出 OpenAI 回傳的結果
 $options = explode("\n", trim($output));
 $options = array_filter(array_map(function($v) {
     // 去除前後空白
