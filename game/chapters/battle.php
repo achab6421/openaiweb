@@ -20,11 +20,11 @@ $monster_id = intval($_GET["monster_id"]);
 require_once "../../config/database_game.php";
 
 // 載入 .env 取得 OpenAI API Key 與 Assistant ID
-$dotenv_path = dirname(__DIR__, 2) . '/config/.env';
+$dotenv_path = dirname(__DIR__, 2) . '/.env';
 if (file_exists($dotenv_path)) {
     $env = parse_ini_file($dotenv_path, false, INI_SCANNER_RAW);
-    $OPENAI_API_KEY = isset($env['OPENAI_API_KEY']) ? trim($env['OPENAI_API_KEY'], "\"' ") : '';
-    $OPENAI_ASSISTANT_ID = isset($env['OPENAI_ASSISTANT_ID']) ? trim($env['OPENAI_ASSISTANT_ID'], "\"' ") : '';
+    $OPENAI_API_KEY = isset($env['OPENAI_API_KEY_43']) ? trim($env['OPENAI_API_KEY_43'], "\"' ") : '';
+    $OPENAI_ASSISTANT_ID = isset($env['OPENAI_ASSISTANT_ID_43']) ? trim($env['OPENAI_ASSISTANT_ID_43'], "\"' ") : '';
 } else {
     $OPENAI_API_KEY = '';
     $OPENAI_ASSISTANT_ID = '';
@@ -142,7 +142,7 @@ EOD;
             $question = "題目取得失敗（API 回傳格式錯誤）: <pre>" . htmlspecialchars($result) . "</pre>";
         }
     } else {
-        $question = "題目取得失敗（HTTP $http_code）: " . htmlspecialchars($curl_error) . "<br>API回傳: <pre>" . htmlspecialchars($result) . "</pre>";
+        $question = "題目取得失敗（HTTP $http_code ）: " . htmlspecialchars($curl_error) . "<br>API回傳: <pre>" . htmlspecialchars($result) . "</pre>";
     }
     return [$question, $answer];
 }
