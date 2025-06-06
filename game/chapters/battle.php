@@ -142,7 +142,7 @@ EOD;
             $question = "題目取得失敗（API 回傳格式錯誤）: <pre>" . htmlspecialchars($result) . "</pre>";
         }
     } else {
-        $question = "題目取得失敗（HTTP $http_code）: " . htmlspecialchars($curl_error) . "<br>API回傳: <pre>" . htmlspecialchars($result) . "</pre>";
+        $question = "題目取得失敗（HTTP $http_code ）: " . htmlspecialchars($curl_error) . "<br>API回傳: <pre>" . htmlspecialchars($result) . "</pre>";
     }
     return [$question, $answer];
 }
