@@ -475,6 +475,12 @@ $conn->close();
                     </div>
                 <?php endif; ?>
                 
+                <div class="text-center mt-4">
+                    <a href="ai_question.php?chapter_id=<?php echo $chapter["chapter_id"]; ?>" class="btn btn-success">
+                        <i class="fas fa-robot me-1"></i> AI 生成實作題
+                    </a>
+                </div>
+                
                 <div class="chapter-actions">
                     <?php if(!empty($progress) && $progress["is_completed"]): ?>
                         <a href="index.php" class="action-btn">
