@@ -1,7 +1,7 @@
 <?php
 define('DB_SERVER', 'localhost');
 define('DB_USERNAME', 'root');
-define('DB_PASSWORD', '');
+define('DB_PASSWORD', '0933127121');
 define('DB_NAME', 'python_monster_village');
 
 // 嘗試連接到數據庫
@@ -14,5 +14,3 @@ if ($conn->connect_error) {
 
 $conn->query("SET NAMES 'utf8'");
 ?>
-
-
