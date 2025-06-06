@@ -65,6 +65,16 @@ $output = shell_exec($cmd);
 
 // 印出 Python 程式回傳的結果
 $options = explode("\n", trim($output));
+$options = array_filter(array_map(function($v) {
+    // 去除前後空白
+    $v = trim($v);
+    // 過濾空字串
+    if ($v === '') return false;
+    // 去除 (A)(B)(C)(D) 或 1: 2: 3: 4: 前綴
+    return preg_replace('/^(\([A-D]\)|[1-4]:)\s*/u', '', $v);
+}, $options));
+// 重新索引
+$options = array_values(array_filter($options, function($v) { return $v !== ''; }));
 
 echo "<script>console.log(".json_encode($options).")</script>";
 ?>
