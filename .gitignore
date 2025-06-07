@@ -1,0 +1,6 @@
+/game/
+.env
+/node_modules/
+/storage/*.key
+/public/storage
+*.log
