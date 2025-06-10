@@ -466,4 +466,18 @@ function renderMarkdown(markdown) {
     
     // 程式碼塊
     html = html.replace(/```python\n([\s\S]*?)```/g, '<pre><code class="language-python">$1</code></pre>');
-    html = html.replace(/
+    html = html.replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>');
+    
+    // 粗體和斜體
+    html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
+    
+    // 列表
+    html = html.replace(/^\s*[\-\*]\s+(.*$)/gm, '<li>$1</li>');
+    html = html.replace(/(<li>.*<\/li>\n)+/g, '<ul>$&</ul>');
+    
+    // 段落
+    html = html.replace(/^(?!<[hou])(.+)$/gm, '<p>$1</p>');
+    
+    return html;
+}

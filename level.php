@@ -206,8 +206,8 @@ $monster_attack = $level['attack_power'];
                                 <div class="character-name"><?= htmlspecialchars($_SESSION['username']) ?></div>
                                 <div class="character-stats">
                                     <div class="stat">HP <span class="hp-value"><?= $player_max_hp ?></span></div>
-                                    <div class="stat">MP <span class="mp-value">44</span></div>
-                                    <div class="stat">TP <span class="tp-value">20</span></div>
+                                    <div class="stat">LV<span class="mp-value"></span> <?= $_SESSION['level'] ?><span></div>
+                                    <div class="stat">ATK<span class="tp-value"> <?= $player_attack ?></span></div>
                                 </div>
                             </div>
                         </div>
