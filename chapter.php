@@ -173,17 +173,6 @@ try {
                 </div>
             </div>
 
-            <div class="quest-debug">
-                <strong>偵錯資訊:</strong>
-                <ul>
-                    <li>登入用戶ID: <?= $_SESSION['user_id'] ?></li>
-                    <li>章節ID: <?= $chapter_id ?></li>
-                    <li>章節狀態: <?= $chapter['is_unlocked'] ? '已解鎖' : '未解鎖' ?></li>
-                    <li>總關卡數: <?= $levelsCount ?></li>
-                    <li>SQL查詢: <?= htmlspecialchars($levels_query) ?></li>
-                </ul>
-            </div>
-
             <div class="quest-container">
                 <!-- 左側怪物資訊 -->
                 <?php if ($currentLevel): ?>
