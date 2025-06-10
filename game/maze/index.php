@@ -11,7 +11,7 @@ if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true) {
 // 引入數據庫連接文件
 require_once "../../config/database_game.php";
 
-$user_id = $_SESSION["id"];
+$user_id = $_SESSION["user_id"];
 $current_level = $_SESSION["current_level"];
 
 // 關閉連接

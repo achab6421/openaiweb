@@ -8,7 +8,7 @@ if (!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true) {
 
 require_once "../../config/database_game.php";
 
-$user_id = $_SESSION["id"];
+$user_id = $_SESSION["user_id"];
 $current_level = $_SESSION["current_level"];
 
 // 關卡資料
