@@ -1,15 +1,16 @@
 <?php
 session_start();
 
-if (!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true) {
-    header("location: ../login.php");
+// 檢查用戶是否已登入
+if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
+    header('Location: index.php');
     exit;
 }
 
 require_once "../../config/database_game.php";
 
-$user_id = $_SESSION["id"];
-$current_level = $_SESSION["current_level"];
+$user_id = $_SESSION["user_id"];
+$current_level = $_SESSION["level"];
 
 // 關卡資料
 $levels = [
