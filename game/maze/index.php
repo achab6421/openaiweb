@@ -3,16 +3,16 @@
 session_start();
 
 // 檢查用戶是否已登入
-if(!isset($_SESSION["loggedin"]) || $_SESSION["loggedin"] !== true) {
-    header("location: ../login.php");
+if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
+    header('Location: index.php');
     exit;
 }
 
 // 引入數據庫連接文件
 require_once "../../config/database_game.php";
 
-$user_id = $_SESSION["user_id"];
-$current_level = $_SESSION["current_level"];
+$user_id = isset($_SESSION["user_id"]) ? $_SESSION["user_id"] : 0;
+$current_level = isset($_SESSION["level"]) ? $_SESSION["level"] : 0;
 
 // 關閉連接
 $conn->close();
@@ -20,6 +20,7 @@ $conn->close();
 
 <!DOCTYPE html>
 <html lang="zh-TW">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -35,26 +36,26 @@ $conn->close();
             color: #333;
             padding-bottom: 50px;
         }
-        
+
         .header {
             background-color: rgba(255, 255, 255, 0.85);
             padding: 15px 0;
             box-shadow: 0 2px 15px rgba(0, 0, 0, 0.2);
             margin-bottom: 40px;
         }
-        
+
         .page-title {
             font-weight: bold;
             color: #D81B60;
             display: inline-flex;
             align-items: center;
         }
-        
+
         .page-title i {
             margin-right: 10px;
             font-size: 1.8rem;
         }
-        
+
         .maze-container {
             background-color: rgba(255, 255, 255, 0.85);
             border-radius: 15px;
@@ -63,31 +64,31 @@ $conn->close();
             margin-bottom: 40px;
             position: relative;
         }
-        
+
         .maze-intro {
             text-align: center;
             margin-bottom: 30px;
         }
-        
+
         .maze-intro h2 {
             font-weight: bold;
             color: #D81B60;
             margin-bottom: 15px;
         }
-        
+
         .maze-intro p {
             font-size: 1.1rem;
             max-width: 700px;
             margin: 0 auto;
         }
-        
+
         .maze-levels {
             display: flex;
             flex-wrap: wrap;
             justify-content: center;
             gap: 20px;
         }
-        
+
         .maze-level {
             width: 180px;
             height: 180px;
@@ -105,29 +106,29 @@ $conn->close();
             transition: all 0.3s ease;
             cursor: pointer;
         }
-        
+
         .maze-level:hover {
             transform: translateY(-10px);
             box-shadow: 0 15px 30px rgba(0, 0, 0, 0.3);
         }
-        
+
         .maze-level.locked {
             background: linear-gradient(45deg, #9E9E9E, #BDBDBD);
             cursor: not-allowed;
         }
-        
+
         .level-number {
             font-size: 3rem;
             font-weight: bold;
             margin-bottom: 5px;
             z-index: 2;
         }
-        
+
         .level-label {
             font-size: 1rem;
             z-index: 2;
         }
-        
+
         .maze-pattern {
             position: absolute;
             top: 0;
@@ -138,7 +139,7 @@ $conn->close();
             background-size: cover;
             opacity: 0.1;
         }
-        
+
         .level-lock {
             position: absolute;
             top: 10px;
@@ -146,7 +147,7 @@ $conn->close();
             font-size: 1.5rem;
             z-index: 2;
         }
-        
+
         .level-required {
             position: absolute;
             bottom: 10px;
@@ -156,7 +157,7 @@ $conn->close();
             border-radius: 10px;
             z-index: 2;
         }
-        
+
         .maze-info {
             margin-top: 40px;
             background-color: white;
@@ -164,20 +165,20 @@ $conn->close();
             padding: 20px;
             box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
         }
-        
+
         .maze-info h3 {
             font-weight: bold;
             color: #D81B60;
             margin-bottom: 15px;
             font-size: 1.3rem;
         }
-        
+
         .info-item {
             margin-bottom: 10px;
             display: flex;
             align-items: center;
         }
-        
+
         .info-item i {
             color: #D81B60;
             margin-right: 10px;
@@ -187,6 +188,7 @@ $conn->close();
         }
     </style>
 </head>
+
 <body>
     <div class="header">
         <div class="container">
@@ -194,62 +196,62 @@ $conn->close();
                 <h1 class="page-title">
                     <i class="fas fa-dungeon"></i> 迷宮尋寶
                 </h1>
-                <a href="../main.php" class="btn btn-outline-secondary">
+                <a href="../../dashboard.php" class="btn btn-outline-secondary">
                     <i class="fas fa-home me-1"></i> 返回主選單
                 </a>
             </div>
         </div>
     </div>
-    
+
     <div class="container">
         <div class="maze-container">
             <div class="maze-intro">
                 <h2><i class="fas fa-treasure-chest me-2"></i>Python 程式迷宮</h2>
                 <p>探索充滿謎題與挑戰的程式迷宮，解開謎題、擊敗怪物、獲取寶藏！每個迷宮都有不同的難度和主題，挑戰自我，提升你的 Python 程式設計能力！</p>
             </div>
-            
+
             <div class="maze-levels">
-                <div class="maze-level <?php echo $current_level < 2 ? 'locked' : ''; ?>" onclick="<?php if($current_level >= 2): ?>randomMaze(1)<?php endif; ?>">
+                <div class="maze-level <?php echo $current_level < 2 ? 'locked' : ''; ?>" onclick="randomMaze(1, this)">
                     <div class="maze-pattern"></div>
-                    <?php if($current_level < 2): ?>
+                    <?php if ($current_level < 2): ?>
                         <div class="level-lock"><i class="fas fa-lock"></i></div>
                         <div class="level-required">需要等級 2</div>
                     <?php endif; ?>
                     <div class="level-number">1</div>
                     <div class="level-label">基礎迷宮</div>
                 </div>
-                
-                <div class="maze-level <?php echo $current_level < 4 ? 'locked' : ''; ?>" onclick="<?php if($current_level >= 4): ?>randomMaze(2)<?php endif; ?>">
+
+                <div class="maze-level <?php echo $current_level < 4 ? 'locked' : ''; ?>" onclick="randomMaze(2, this)">
                     <div class="maze-pattern"></div>
-                    <?php if($current_level < 4): ?>
+                    <?php if ($current_level < 4): ?>
                         <div class="level-lock"><i class="fas fa-lock"></i></div>
                         <div class="level-required">需要等級 4</div>
                     <?php endif; ?>
                     <div class="level-number">2</div>
                     <div class="level-label">函數迷宮</div>
                 </div>
-                
-                <div class="maze-level <?php echo $current_level < 6 ? 'locked' : ''; ?>" onclick="<?php if($current_level >= 6): ?>randomMaze(3)<?php endif; ?>">
+
+                <div class="maze-level <?php echo $current_level < 6 ? 'locked' : ''; ?>" onclick="randomMaze(3, this)">
                     <div class="maze-pattern"></div>
-                    <?php if($current_level < 6): ?>
+                    <?php if ($current_level < 6): ?>
                         <div class="level-lock"><i class="fas fa-lock"></i></div>
                         <div class="level-required">需要等級 6</div>
                     <?php endif; ?>
                     <div class="level-number">3</div>
                     <div class="level-label">數據迷宮</div>
                 </div>
-                
-                <div class="maze-level <?php echo $current_level < 8 ? 'locked' : ''; ?>" onclick="<?php if($current_level >= 8): ?>randomMaze(4)<?php endif; ?>">
+
+                <div class="maze-level <?php echo $current_level < 8 ? 'locked' : ''; ?>" onclick="randomMaze(4, this)">
                     <div class="maze-pattern"></div>
-                    <?php if($current_level < 8): ?>
+                    <?php if ($current_level < 8): ?>
                         <div class="level-lock"><i class="fas fa-lock"></i></div>
                         <div class="level-required">需要等級 8</div>
                     <?php endif; ?>
                     <div class="level-number">4</div>
                     <div class="level-label">檔案迷宮</div>
                 </div>
-                
-                <div class="maze-level locked">
+
+                <div class="maze-level locked" onclick="randomMaze(5, this)">
                     <div class="maze-pattern"></div>
                     <div class="level-lock"><i class="fas fa-lock"></i></div>
                     <div class="level-required">敬請期待</div>
@@ -257,7 +259,7 @@ $conn->close();
                     <div class="level-label">進階迷宮</div>
                 </div>
             </div>
-            
+
             <div class="maze-info">
                 <h3>迷宮探索指南</h3>
                 <div class="info-item">
@@ -283,18 +285,27 @@ $conn->close();
             </div>
         </div>
     </div>
-    
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        function randomMaze(level) {
-            // 0: choose, 1: sorting
+        function randomMaze(level, el) {
+            // 若有 locked class，則不執行並提示
+            if (el.classList.contains('locked')) {
+                let msg = el.querySelector('.level-required')?.innerText || '此迷宮尚未解鎖！';
+                alert(msg); // 增加 alert 提示
+                return false; // 明確回傳 false
+            }
+
             var pages = [
                 'maze_level_choose.php?level=' + level,
                 'maze_level_Sorting.php?level=' + level
             ];
             var idx = Math.floor(Math.random() * pages.length);
             window.location.href = pages[idx];
+
+            return true; // 執行成功時回傳 true
         }
     </script>
 </body>
+
 </html>
