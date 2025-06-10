@@ -1,0 +1,306 @@
+/* 全局樣式設定 */
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+:root {
+    --primary-color: #8b0000; /* 深紅色 */
+    --secondary-color: #3d1c02; /* 深棕色 */
+    --dark-bg: #1a1a1a; /* 暗黑背景 */
+    --dark-accent: #2d2d2d; /* 暗色強調 */
+    --light-accent: #4a3f35; /* 較淺的棕色 */
+    --text-light: #d4c8b8; /* 淺棕文字 */
+    --text-dark: #242424; /* 暗色文字 */
+    --highlight: #ff4000; /* 火焰色強調 */
+    --shadow-color: rgba(0, 0, 0, 0.7); /* 陰影色 */
+    --border-color: #534b42; /* 邊框色 */
+}
+
+body {
+    font-family: 'Noto Sans TC', sans-serif;
+    line-height: 1.6;
+    color: var(--text-light);
+    background-color: var(--dark-bg);
+    background-image: url('../images/dark-texture-bg.jpg');
+    background-size: 200px;
+}
+
+/* 首頁登陸頁樣式 */
+.landing-page {
+    background-image: url('../images/dungeon-landing-bg.jpg');
+    background-size: cover;
+    background-position: center;
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+}
+
+.landing-page::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.7);
+    z-index: 1;
+}
+
+.landing-container {
+    text-align: center;
+    z-index: 2;
+    padding: 2rem;
+    max-width: 800px;
+}
+
+.landing-content {
+    background-color: rgba(26, 26, 26, 0.9);
+    padding: 3rem;
+    border-radius: 0; /* 移除圓角 */
+    box-shadow: 0 0 20px var(--shadow-color), 0 0 40px var(--shadow-color);
+    border: 1px solid var(--border-color);
+    position: relative;
+}
+
+.landing-content::after {
+    content: '';
+    position: absolute;
+    top: -5px;
+    left: -5px;
+    right: -5px;
+    bottom: -5px;
+    border: 2px solid var(--primary-color);
+    z-index: -1;
+    pointer-events: none;
+}
+
+.logo {
+    width: 180px;
+    margin-bottom: 1.5rem;
+    filter: drop-shadow(0 0 10px var(--primary-color));
+}
+
+h1 {
+    font-size: 2.5rem;
+    color: var(--text-light);
+    margin-bottom: 0.5rem;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    text-shadow: 0 0 10px var(--shadow-color);
+}
+
+h2 {
+    font-size: 1.8rem;
+    color: var(--primary-color);
+    margin-bottom: 1.5rem;
+    text-shadow: 0 0 5px var(--shadow-color);
+}
+
+.landing-content p {
+    font-size: 1.2rem;
+    margin-bottom: 2rem;
+    color: var(--text-light);
+}
+
+.cta-button {
+    background-color: var(--primary-color);
+    color: white;
+    border: 2px solid var(--border-color);
+    padding: 1rem 2rem;
+    font-size: 1.2rem;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s;
+    box-shadow: 0 4px 6px var(--shadow-color), inset 0 0 10px rgba(255, 64, 0, 0.2);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.cta-button:hover {
+    background-color: var(--highlight);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 12px var(--shadow-color), inset 0 0 15px rgba(255, 64, 0, 0.4);
+    border-color: var(--highlight);
+}
+
+.cta-button:active {
+    transform: translateY(1px);
+}
+
+/* 模態框樣式 */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 100;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+}
+
+.modal-content {
+    background-color: var(--dark-bg);
+    margin: 10vh auto;
+    padding: 30px;
+    width: 90%;
+    max-width: 500px;
+    position: relative;
+    box-shadow: 0 0 20px var(--shadow-color), 0 0 40px var(--shadow-color);
+    border: 1px solid var(--border-color);
+}
+
+.close-button {
+    position: absolute;
+    top: 15px;
+    right: 20px;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+    color: var(--text-light);
+    transition: color 0.3s;
+}
+
+.close-button:hover {
+    color: var(--highlight);
+}
+
+/* 標籤頁樣式 */
+.tabs {
+    display: flex;
+    margin-bottom: 20px;
+    border-bottom: 2px solid var(--border-color);
+}
+
+.tab-button {
+    padding: 10px 15px;
+    background: none;
+    border: none;
+    font-size: 16px;
+    font-weight: bold;
+    color: var(--text-light);
+    cursor: pointer;
+    flex: 1;
+    transition: all 0.3s;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.tab-button.active {
+    color: var(--highlight);
+    border-bottom: 3px solid var(--highlight);
+    text-shadow: 0 0 5px var(--highlight);
+}
+
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+/* 表單樣式 */
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: bold;
+    color: var(--text-light);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-size: 0.9rem;
+}
+
+.form-group input {
+    width: 100%;
+    padding: 12px;
+    background-color: var(--dark-accent);
+    border: 1px solid var(--border-color);
+    color: var(--text-light);
+    font-size: 16px;
+    transition: all 0.3s;
+}
+
+.form-group input:focus {
+    border-color: var(--highlight);
+    outline: none;
+    box-shadow: 0 0 10px rgba(255, 64, 0, 0.3);
+}
+
+.submit-button {
+    background-color: var(--primary-color);
+    color: white;
+    border: 1px solid var(--border-color);
+    padding: 12px 20px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    width: 100%;
+    margin-top: 10px;
+    transition: all 0.3s;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.submit-button:hover {
+    background-color: var(--highlight);
+    border-color: var(--highlight);
+    box-shadow: 0 0 15px rgba(255, 64, 0, 0.5);
+}
+
+.error-message {
+    color: var(--highlight);
+    font-size: 14px;
+    margin-top: 10px;
+    min-height: 20px;
+}
+
+/* 主頁面樣式 */
+.main-container {
+    display: flex;
+    min-height: 100vh;
+}
+
+.sidebar {
+    width: 280px;
+    background-color: var(--dark-accent);
+    color: var(--text-light);
+    padding: 20px;
+    border-right: 1px solid var(--border-color);
+}
+
+.main-content {
+    flex: 1;
+    padding: 30px;
+}
+
+/* 響應式設計 */
+@media (max-width: 768px) {
+    .landing-content {
+        padding: 2rem;
+    }
+    
+    h1 {
+        font-size: 2rem;
+    }
+    
+    h2 {
+        font-size: 1.5rem;
+    }
+    
+    .main-container {
+        flex-direction: column;
+    }
+    
+    .sidebar {
+        width: 100%;
+    }
+}

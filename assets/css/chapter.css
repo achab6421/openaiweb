@@ -1,0 +1,238 @@
+/* 章節和關卡頁面樣式 */
+
+.chapter-header {
+    background-color: rgba(26, 20, 16, 0.9);
+    padding: 25px;
+    margin-bottom: 30px;
+    box-shadow: 0 5px 15px var(--shadow-color);
+    position: relative;
+    border: 1px solid var(--border-color);
+}
+
+.chapter-header::before {
+    content: '';
+    position: absolute;
+    top: 5px;
+    left: 5px;
+    right: 5px;
+    bottom: 5px;
+    border: 1px solid rgba(139, 0, 0, 0.3);
+    pointer-events: none;
+}
+
+.back-button {
+    display: inline-block;
+    padding: 8px 15px;
+    background-color: var(--dark-accent);
+    color: var(--text-light);
+    text-decoration: none;
+    margin-bottom: 15px;
+    transition: all 0.3s;
+    border: 1px solid var(--border-color);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-size: 0.8rem;
+}
+
+.back-button:hover {
+    background-color: var(--primary-color);
+    color: white;
+    border-color: var(--highlight);
+    text-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+}
+
+.chapter-header h1 {
+    font-size: 2rem;
+    color: var(--text-light);
+    margin-bottom: 15px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    text-shadow: 0 0 5px var(--shadow-color);
+    position: relative;
+    display: inline-block;
+}
+
+.chapter-header h1::after {
+    content: '';
+    position: absolute;
+    bottom: -5px;
+    left: 0;
+    width: 60%;
+    height: 2px;
+    background-color: var(--primary-color);
+}
+
+.chapter-description {
+    margin-top: 15px;
+    color: var(--text-light);
+    line-height: 1.6;
+    opacity: 0.9;
+}
+
+/* 關卡列表樣式 */
+.levels-container {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.level-card {
+    background-color: rgba(26, 20, 16, 0.9);
+    overflow: hidden;
+    box-shadow: 0 5px 15px var(--shadow-color);
+    display: flex;
+    transition: all 0.3s;
+    border: 1px solid var(--border-color);
+}
+
+.level-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px var(--shadow-color);
+    border-color: var(--primary-color);
+}
+
+.level-card.inaccessible {
+    opacity: 0.7;
+    filter: grayscale(0.5);
+}
+
+.level-card.completed {
+    border-left: 4px solid #50c878; /* 翡翠綠 */
+}
+
+.level-info {
+    padding: 20px;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+}
+
+.level-info h3 {
+    font-size: 1.4rem;
+    color: var(--text-light);
+    margin-bottom: 15px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    text-shadow: 0 0 5px var(--shadow-color);
+}
+
+.monster-info {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.monster-type {
+    padding: 5px 10px;
+    font-size: 0.9rem;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border: 1px solid;
+}
+
+.monster-type.normal {
+    border-color: #3498db;
+    color: #3498db;
+    background-color: rgba(52, 152, 219, 0.1);
+}
+
+.monster-type.boss {
+    border-color: var(--primary-color);
+    color: var(--primary-color);
+    background-color: rgba(139, 0, 0, 0.1);
+    text-shadow: 0 0 5px rgba(139, 0, 0, 0.5);
+}
+
+.monster-hp, .monster-atk {
+    padding: 5px 10px;
+    background-color: rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--border-color);
+    font-size: 0.9rem;
+    color: var(--text-light);
+}
+
+.teaching-point {
+    margin: 15px 0;
+    color: var(--text-light);
+    flex-grow: 1;
+    line-height: 1.6;
+    opacity: 0.9;
+    padding-left: 10px;
+    border-left: 2px solid var(--border-color);
+}
+
+.level-status {
+    margin-top: 15px;
+    font-weight: bold;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-size: 0.9rem;
+}
+
+.status-completed {
+    color: #50c878; /* 翡翠綠 */
+    text-shadow: 0 0 5px rgba(80, 200, 120, 0.3);
+}
+
+.status-available {
+    color: #4b9cd3; /* 天藍色 */
+    text-shadow: 0 0 5px rgba(75, 156, 211, 0.3);
+}
+
+.status-locked {
+    color: #a0a0a0; /* 灰色 */
+}
+
+.level-button {
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    padding: 20px;
+    text-align: center;
+    font-size: 1rem;
+    font-weight: bold;
+    cursor: pointer;
+    text-decoration: none;
+    min-width: 150px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    position: relative;
+}
+
+.level-button:hover {
+    background-color: var(--highlight);
+    text-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+}
+
+.level-button::before {
+    content: '⚔️';
+    margin-right: 8px;
+}
+
+.level-button.disabled {
+    background-color: #333333;
+    cursor: not-allowed;
+}
+
+.level-button.disabled::before {
+    content: '🔒';
+}
+
+/* 響應式設計 */
+@media (max-width: 768px) {
+    .level-card {
+        flex-direction: column;
+    }
+    
+    .level-button {
+        min-width: auto;
+        width: 100%;
+    }
+}

@@ -1,0 +1,590 @@
+/* 魔物獵人風格任務與關卡頁面樣式 */
+
+.quest-page {
+    background-image: url('../images/quest-bg.jpg');
+    background-size: cover;
+    background-position: center;
+    background-attachment: fixed;
+}
+
+.quest-header {
+    background-color: rgba(26, 20, 16, 0.9);
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 5px 15px var(--shadow-color);
+    border: 1px solid var(--border-color);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.quest-header .back-button {
+    margin-right: 20px;
+    background-color: var(--dark-accent);
+    color: var(--text-light);
+    padding: 8px 15px;
+    border: 1px solid var(--border-color);
+    text-decoration: none;
+    font-size: 0.9rem;
+    transition: all 0.3s;
+}
+
+.quest-header .back-button:hover {
+    background-color: var(--primary-color);
+    border-color: var(--highlight);
+}
+
+.quest-header h1 {
+    flex: 1;
+    margin: 0;
+    padding: 0;
+    font-size: 1.8rem;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+.quest-header .chapter-difficulty {
+    margin-left: 20px;
+    display: flex;
+    align-items: center;
+}
+
+.difficulty-label {
+    margin-right: 5px;
+    font-weight: bold;
+    color: var(--text-light);
+}
+
+/* 主要任務容器 */
+.quest-container {
+    display: flex;
+    gap: 20px;
+    height: calc(100vh - 180px);
+}
+
+/* 左側怪物資訊面板 */
+.monster-info-panel {
+    flex: 1;
+    background-color: rgba(26, 20, 16, 0.9);
+    padding: 20px;
+    border: 1px solid var(--border-color);
+    box-shadow: 0 5px 15px var(--shadow-color);
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    position: relative;
+}
+
+.monster-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 2px solid var(--primary-color);
+    padding-bottom: 10px;
+    margin-bottom: 15px;
+}
+
+.monster-header h2 {
+    margin: 0;
+    color: var(--text-light);
+    font-size: 1.6rem;
+    text-transform: uppercase;
+}
+
+h2.boss-monster {
+    color: var(--highlight);
+    text-shadow: 0 0 5px rgba(255, 64, 0, 0.5);
+}
+
+.level-number {
+    padding: 5px 12px;
+    background-color: var(--dark-accent);
+    color: var(--text-light);
+    font-weight: bold;
+    border: 1px solid var(--border-color);
+}
+
+.monster-image-container {
+    position: relative;
+    margin-bottom: 20px;
+    border: 2px solid var(--border-color);
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+    overflow: hidden;
+}
+
+.monster-image {
+    width: 100%;
+    height: 250px;
+    object-fit: cover;
+    display: block;
+}
+
+.monster-difficulty {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background-color: rgba(0, 0, 0, 0.7);
+    padding: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+}
+
+.monster-difficulty span {
+    margin-right: 5px;
+}
+
+.monster-star {
+    color: var(--primary-color);
+    text-shadow: 0 0 3px rgba(255, 0, 0, 0.5);
+}
+
+.monster-stats {
+    margin-bottom: 20px;
+    border: 1px solid var(--border-color);
+    padding: 15px;
+    background-color: rgba(0, 0, 0, 0.3);
+}
+
+.stat-row {
+    display: flex;
+    align-items: center;
+    margin-bottom: 10px;
+    padding: 5px 0;
+}
+
+.stat-row:last-child {
+    margin-bottom: 0;
+}
+
+.stat-label {
+    width: 80px;
+    font-weight: bold;
+    color: var(--text-light);
+}
+
+.stat-bar {
+    flex: 1;
+    height: 12px;
+    background-color: rgba(0, 0, 0, 0.5);
+    border: 1px solid var(--border-color);
+    margin: 0 10px;
+    position: relative;
+}
+
+.stat-fill {
+    height: 100%;
+    transition: width 0.5s;
+}
+
+.hp-bar .stat-fill {
+    background-color: #e74c3c;
+    box-shadow: inset 0 0 5px rgba(255, 0, 0, 0.7);
+}
+
+.attack-bar .stat-fill {
+    background-color: #f39c12;
+    box-shadow: inset 0 0 5px rgba(255, 153, 0, 0.7);
+}
+
+.exp-bar .stat-fill {
+    background-color: #2ecc71;
+    box-shadow: inset 0 0 5px rgba(46, 204, 113, 0.7);
+}
+
+.stat-value {
+    width: 60px;
+    text-align: right;
+    font-weight: bold;
+    color: var(--text-light);
+}
+
+.teaching-point-container {
+    margin-bottom: 20px;
+    padding: 15px;
+    border: 1px solid var(--border-color);
+    background-color: rgba(0, 0, 0, 0.3);
+}
+
+.teaching-point-container h3 {
+    margin-top: 0;
+    margin-bottom: 10px;
+    color: var(--highlight);
+    text-transform: uppercase;
+    font-size: 1rem;
+    letter-spacing: 1px;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 5px;
+}
+
+.teaching-point-container p {
+    color: var(--text-light);
+    line-height: 1.6;
+    margin: 0;
+}
+
+.wave-info {
+    margin-bottom: 20px;
+    padding: 15px;
+    border: 1px solid var(--border-color);
+    background-color: rgba(0, 0, 0, 0.3);
+}
+
+.wave-info h3 {
+    margin-top: 0;
+    margin-bottom: 10px;
+    color: var(--highlight);
+    text-transform: uppercase;
+    font-size: 1rem;
+    letter-spacing: 1px;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 5px;
+}
+
+.wave-indicators {
+    display: flex;
+    gap: 10px;
+}
+
+.wave-indicator {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 10px;
+    border: 1px solid var(--border-color);
+    background-color: var(--dark-accent);
+    color: var(--text-light);
+    flex: 1;
+}
+
+.wave-indicator i {
+    font-size: 1.2rem;
+    margin-bottom: 5px;
+    color: var(--highlight);
+}
+
+.player-record {
+    margin-bottom: 20px;
+    padding: 15px;
+    border: 1px solid var(--border-color);
+    background-color: rgba(0, 0, 0, 0.3);
+}
+
+.player-record h3 {
+    margin-top: 0;
+    margin-bottom: 10px;
+    color: var(--highlight);
+    text-transform: uppercase;
+    font-size: 1rem;
+    letter-spacing: 1px;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: 5px;
+}
+
+.record-stats {
+    display: flex;
+    justify-content: space-between;
+}
+
+.record-stats div {
+    color: var(--text-light);
+    font-size: 0.9rem;
+}
+
+.record-stats span {
+    font-weight: bold;
+    color: var(--highlight);
+    margin-left: 5px;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 10px;
+}
+
+.start-button, .replay-button {
+    flex: 1;
+    background-color: var(--highlight);
+    color: white;
+    border: none;
+    padding: 15px;
+    text-align: center;
+    font-size: 1rem;
+    font-weight: bold;
+    cursor: pointer;
+    text-decoration: none;
+    display: block;
+    transition: all 0.3s;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    position: relative;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.start-button:hover, .replay-button:hover {
+    background-color: var(--primary-color);
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+}
+
+.start-button::before, .replay-button::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(to bottom, rgba(255, 255, 255, 0.2), transparent);
+    pointer-events: none;
+}
+
+.replay-button {
+    background-color: var(--dark-accent);
+}
+
+.replay-button:hover {
+    background-color: var(--highlight);
+}
+
+.no-level-selected {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: var(--text-light);
+    opacity: 0.6;
+    text-transform: uppercase;
+}
+
+/* 右側關卡列表面板 */
+.quest-list-panel {
+    width: 350px;
+    background-color: rgba(26, 20, 16, 0.9);
+    border: 1px solid var(--border-color);
+    box-shadow: 0 5px 15px var(--shadow-color);
+    display: flex;
+    flex-direction: column;
+}
+
+.quest-list-panel h2 {
+    margin: 0;
+    padding: 15px;
+    color: var(--text-light);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border-bottom: 2px solid var(--primary-color);
+    font-size: 1.3rem;
+    text-align: center;
+}
+
+.quest-list-container {
+    flex: 1;
+    overflow-y: auto;
+    padding: 10px;
+}
+
+.quest-item {
+    margin-bottom: 10px;
+    border: 1px solid var(--border-color);
+    transition: all 0.3s;
+    background-color: rgba(0, 0, 0, 0.3);
+    position: relative;
+}
+
+.quest-item.completed {
+    border-left: 4px solid #2ecc71;
+}
+
+.quest-item.available {
+    border-left: 4px solid #f39c12;
+}
+
+.quest-item.locked {
+    border-left: 4px solid #95a5a6;
+    opacity: 0.7;
+    filter: grayscale(0.5);
+}
+
+.quest-item.selected {
+    border-color: var(--highlight);
+    box-shadow: 0 0 10px var(--highlight);
+    transform: translateX(-5px);
+}
+
+.quest-item-content {
+    display: flex;
+    padding: 12px;
+    cursor: pointer;
+}
+
+.quest-rank {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: var(--dark-accent);
+    color: var(--text-light);
+    font-weight: bold;
+    font-size: 1.1rem;
+    margin-right: 12px;
+    border: 1px solid var(--border-color);
+    flex-shrink: 0;
+}
+
+.boss-rank {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+.quest-details {
+    flex: 1;
+    overflow: hidden;
+}
+
+.quest-details h3 {
+    margin: 0 0 5px 0;
+    color: var(--text-light);
+    font-size: 1rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.quest-target {
+    font-size: 0.85rem;
+    color: #bbb;
+    margin: 0 0 8px 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.quest-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.quest-stat {
+    font-size: 0.8rem;
+    color: var(--text-light);
+    background-color: rgba(0, 0, 0, 0.3);
+    padding: 2px 6px;
+    border: 1px solid var(--border-color);
+}
+
+.quest-stat i {
+    margin-right: 3px;
+}
+
+.quest-status {
+    display: flex;
+    align-items: center;
+    margin-left: 10px;
+}
+
+.quest-status i {
+    font-size: 1.2rem;
+}
+
+.quest-item.completed .quest-status i {
+    color: #2ecc71;
+}
+
+.quest-item.available .quest-status i {
+    color: #f39c12;
+}
+
+.quest-item.locked .quest-status i {
+    color: #95a5a6;
+}
+
+.quest-select-button {
+    display: block;
+    padding: 8px;
+    background-color: var(--dark-accent);
+    color: var(--text-light);
+    text-align: center;
+    text-decoration: none;
+    border-top: 1px solid var(--border-color);
+    transition: all 0.3s;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.quest-select-button:not(.disabled):hover {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+.quest-select-button.disabled {
+    background-color: #333;
+    color: #777;
+    cursor: not-allowed;
+}
+
+/* 調試信息樣式 */
+.quest-debug {
+    background-color: rgba(255, 255, 255, 0.9);
+    border: 2px solid #e74c3c;
+    padding: 15px;
+    margin-bottom: 20px;
+    font-size: 14px;
+    color: #333;
+}
+
+.quest-debug ul {
+    margin: 10px 0 0 20px;
+    padding: 0;
+}
+
+.quest-debug li {
+    margin-bottom: 5px;
+}
+
+/* 反應式設計 */
+@media (max-width: 992px) {
+    .quest-container {
+        flex-direction: column;
+        height: auto;
+    }
+    
+    .quest-list-panel {
+        width: 100%;
+        order: 1;
+        margin-bottom: 20px;
+    }
+    
+    .monster-info-panel {
+        order: 2;
+    }
+    
+    .quest-list-container {
+        max-height: 400px;
+    }
+}
+
+@media (max-width: 768px) {
+    .quest-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    
+    .quest-header .back-button {
+        margin-bottom: 10px;
+        margin-right: 0;
+    }
+    
+    .quest-header .chapter-difficulty {
+        margin-left: 0;
+    }
+    
+    .record-stats {
+        flex-direction: column;
+        gap: 5px;
+    }
+}
