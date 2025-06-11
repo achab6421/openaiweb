@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Python題目生成測試</title>
+    <link rel="stylesheet" href="../css/problem-display.css">
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -92,7 +93,7 @@
     
     <div id="result">
         <h2>生成結果</h2>
-        <div id="problemContent"></div>
+        <div id="problemContent" class="problem-container"></div>
         <pre id="responseData"></pre>
         <div class="raw-response">
             <h3>原始回應</h3>
@@ -100,6 +101,7 @@
         </div>
     </div>
     
+    <script src="../js/problem-formatter.js"></script>
     <script>
         document.getElementById('generateBtn').addEventListener('click', function() {
             // 獲取輸入值
@@ -157,8 +159,8 @@
                 
                 // 處理響應
                 if (data.success) {
-                    // 將Markdown轉換為HTML顯示
-                    const problemHtml = convertMarkdownToHtml(data.problem);
+                    // 使用格式化工具處理問題文本
+                    const problemHtml = ProblemFormatter.formatProblem(data.problem);
                     document.getElementById('problemContent').innerHTML = problemHtml;
                 } else {
                     document.getElementById('problemContent').innerHTML = `<p class="error">錯誤: ${data.message || '生成題目失敗'}</p>`;
@@ -170,11 +172,9 @@
                 console.error('Error:', error);
             });
         });
-        
-        // 簡單的Markdown轉HTML功能
-        function convertMarkdownToHtml(markdown) {
-            if (!markdown) return '';
-            
+    </script>
+</body>
+</html>
             // 處理標題
             let html = markdown
                 .replace(/## (.*)/g, '<h2>$1</h2>')

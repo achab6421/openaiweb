@@ -130,7 +130,7 @@ $monster_attack = $level['attack_power'];
         <div class="battle-content">
             <!-- 左側程式編輯區 -->
             <div class="code-section">
-                <div class="problem-container">
+                <div class="problem-container " style="height: 200px;">
                     <h2>挑戰題目</h2>
                     <div id="problem-description" class="problem-description">
                         <div class="loading">正在載入題目...</div>
@@ -146,7 +146,7 @@ $monster_attack = $level['attack_power'];
                     </div>
                 </div>
 
-                <div class="output-container">
+                <div class="output-container mb-3">
                     <h3>執行結果</h3>
                     <div id="output-display" class="output-display"></div>
                 </div>
@@ -154,9 +154,9 @@ $monster_attack = $level['attack_power'];
 
             <!-- 右側戰鬥畫面區 -->
             <div class="battle-section">
-                <div class="battle-scene">
+                <div class="battle-scene" style="height: 10px;">
                     <!-- 怪物區 -->
-                    <div class="monsters-area">
+                    <div class="monsters-area" style="height: 30%;">
                         <div class="monster-unit" id="monster1">
                             <?php
                                 $monsterImage = "assets/images/monsters/monster-{$level['monster_id']}.png";
@@ -220,7 +220,7 @@ $monster_attack = $level['attack_power'];
                     </div>
                 </div>
                 
-                <div class="battle-tutorial">
+                <div class="battle-tutorial" style="height: 30%;">
                     <h3 class="tutorial-title"><i class="fas fa-book"></i> 學習指南</h3>
                     <div class="tutorial-content">
                         <?php if ($tutorial_stmt->rowCount() > 0): ?>
