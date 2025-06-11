@@ -138,7 +138,7 @@ function createThread($apiKey) {
         CURLOPT_HTTPHEADER => [
             "Authorization: Bearer " . $apiKey,
             "Content-Type: application/json",
-            "OpenAI-Beta: assistants=v1"
+            "OpenAI-Beta: assistants=v2"  // 更新為 v2
         ],
     ]);
     
@@ -194,7 +194,7 @@ function addMessage($apiKey, $threadId, $levelInfo) {
         CURLOPT_HTTPHEADER => [
             "Authorization: Bearer " . $apiKey,
             "Content-Type: application/json",
-            "OpenAI-Beta: assistants=v1"
+            "OpenAI-Beta: assistants=v2"  // 更新為 v2
         ],
     ]);
     
@@ -226,7 +226,7 @@ function runAssistant($apiKey, $threadId, $assistantId) {
         CURLOPT_HTTPHEADER => [
             "Authorization: Bearer " . $apiKey,
             "Content-Type: application/json",
-            "OpenAI-Beta: assistants=v1"
+            "OpenAI-Beta: assistants=v2"  // 更新為 v2
         ],
     ]);
     
@@ -254,7 +254,7 @@ function pollForCompletion($apiKey, $threadId, $runId) {
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_HTTPHEADER => [
                 "Authorization: Bearer " . $apiKey,
-                "OpenAI-Beta: assistants=v1"
+                "OpenAI-Beta: assistants=v2"  // 更新為 v2
             ],
         ]);
         
@@ -295,7 +295,7 @@ function getAssistantResponse($apiKey, $threadId) {
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_HTTPHEADER => [
             "Authorization: Bearer " . $apiKey,
-            "OpenAI-Beta: assistants=v1"
+            "OpenAI-Beta: assistants=v2"  // 更新為 v2
         ],
     ]);
     

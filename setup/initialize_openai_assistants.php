@@ -63,7 +63,7 @@ function createProblemGeneratorAssistant($apiKey) {
         CURLOPT_HTTPHEADER => [
             "Authorization: Bearer " . $apiKey,
             "Content-Type: application/json",
-            "OpenAI-Beta: assistants=v1"
+            "OpenAI-Beta: assistants=v2"  // 更新為 v2
         ],
     ]);
     
@@ -104,7 +104,7 @@ function createSolutionValidatorAssistant($apiKey) {
         CURLOPT_HTTPHEADER => [
             "Authorization: Bearer " . $apiKey,
             "Content-Type: application/json",
-            "OpenAI-Beta: assistants=v1"
+            "OpenAI-Beta: assistants=v2"  // 更新為 v2
         ],
     ]);
     

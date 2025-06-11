@@ -86,7 +86,7 @@ try {
             CURLOPT_HTTPHEADER => [
                 "Authorization: Bearer " . $apiKey,
                 "Content-Type: application/json",
-                "OpenAI-Beta: assistants=v1"
+                "OpenAI-Beta: assistants=v2"  // 更新為 v2
             ],
             CURLOPT_TIMEOUT => 10
         ]);
@@ -145,7 +145,7 @@ try {
                 CURLOPT_RETURNTRANSFER => true,
                 CURLOPT_HTTPHEADER => [
                     "Authorization: Bearer " . $apiKey,
-                    "OpenAI-Beta: assistants=v1"
+                    "OpenAI-Beta: assistants=v2"  // 更新為 v2
                 ],
                 CURLOPT_TIMEOUT => 10
             ]);
@@ -180,7 +180,7 @@ try {
                 CURLOPT_RETURNTRANSFER => true,
                 CURLOPT_HTTPHEADER => [
                     "Authorization: Bearer " . $apiKey,
-                    "OpenAI-Beta: assistants=v1"
+                    "OpenAI-Beta: assistants=v2"  // 更新為 v2
                 ],
                 CURLOPT_TIMEOUT => 10
             ]);
