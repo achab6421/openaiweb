@@ -318,13 +318,13 @@ function getAssistantResponse($apiKey, $threadId) {
     }
     
     // 組合所有內容部分
-    $content = '';
-    foreach ($messages[0]['content'] as $part) {
-        if ($part['type'] === 'text') {
-            $content .= $part['text']['value'];
+    $fullContent = '';
+    foreach ($messages[0]['content'] as $contentPart) {
+        if ($contentPart['type'] === 'text') {
+            $fullContent .= $contentPart['text']['value'];
         }
     }
     
-    return $content;
+    return $fullContent;
 }
 ?>
