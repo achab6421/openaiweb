@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Python 程式碼執行測試</title>
+    <style>
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            line-height: 1.6;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        
+        h1, h2 {
+            color: #2c3e50;
+        }
+        
+        .container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        
+        @media (max-width: 768px) {
+            .container {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        
+        textarea {
+            width: 100%;
+            min-height: 200px;
+            padding: 10px;
+            font-family: 'Courier New', monospace;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        
+        button {
+            background-color: #3498db;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        
+        button:hover {
+            background-color: #2980b9;
+        }
+        
+        .output-container {
+            margin-top: 20px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 15px;
+            background-color: #f9f9f9;
+        }
+        
+        .output-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            align-items: center;
+        }
+        
+        .execution-time {
+            font-size: 14px;
+            color: #7f8c8d;
+        }
+        
+        .output-box, .error-box {
+            background-color: #fff;
+            padding: 10px;
+            border-radius: 4px;
+            border: 1px solid #eee;
+            margin-bottom: 10px;
+            min-height: 50px;
+            max-height: 200px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+        }
+        
+        .error-box {
+            background-color: #fff0f0;
+            border-color: #ffcccc;
+            color: #e74c3c;
+        }
+        
+        .loading {
+            display: none;
+            margin-top: 20px;
+            text-align: center;
+            color: #3498db;
+        }
+    </style>
+</head>
+<body>
+    <h1>Python 程式碼執行測試</h1>
+    
+    <div class="container">
+        <div class="code-panel">
+            <div class="form-group">
+                <label for="pythonCode">Python 程式碼:</label>
+                <textarea id="pythonCode" placeholder="# 在這裡輸入你的Python程式碼">print("Hello, Python!")</textarea>
+            </div>
+            
+            <div class="form-group">
+                <label for="inputData">標準輸入 (可選):</label>
+                <textarea id="inputData" placeholder="輸入數據，每行一個值"></textarea>
+            </div>
+            
+            <button id="runButton">運行程式</button>
+        </div>
+        
+        <div class="result-panel">
+            <h2>執行結果</h2>
+            
+            <div class="loading" id="loadingIndicator">
+                <p>正在執行程式碼，請稍候...</p>
+            </div>
+            
+            <div class="output-container">
+                <div class="output-header">
+                    <h3>標準輸出</h3>
+                    <span class="execution-time" id="executionTime"></span>
+                </div>
+                <div class="output-box" id="outputDisplay"></div>
+                
+                <h3>錯誤輸出</h3>
+                <div class="error-box" id="errorDisplay"></div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        document.getElementById('runButton').addEventListener('click', function() {
+            const pythonCode = document.getElementById('pythonCode').value;
+            const inputData = document.getElementById('inputData').value;
+            const outputDisplay = document.getElementById('outputDisplay');
+            const errorDisplay = document.getElementById('errorDisplay');
+            const executionTime = document.getElementById('executionTime');
+            const loadingIndicator = document.getElementById('loadingIndicator');
+            
+            // 清空先前的結果
+            outputDisplay.textContent = '';
+            errorDisplay.textContent = '';
+            executionTime.textContent = '';
+            
+            // 顯示載入指示器
+            loadingIndicator.style.display = 'block';
+            
+            // 發送API請求
+            fetch('../api/test-code.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({
+                    code: pythonCode,
+                    input: inputData
+                }),
+                credentials: 'same-origin'
+            })
+            .then(response => response.json())
+            .then(data => {
+                // 隱藏載入指示器
+                loadingIndicator.style.display = 'none';
+                
+                if (data.success) {
+                    // 顯示執行結果
+                    outputDisplay.textContent = data.output || '(沒有輸出)';
+                    errorDisplay.textContent = data.errors || '';
+                    
+                    if (data.executionTime) {
+                        executionTime.textContent = `執行時間: ${data.executionTime} 毫秒`;
+                    }
+                } else {
+                    // 顯示錯誤訊息
+                    errorDisplay.textContent = data.message || '執行失敗';
+                }
+            })
+            .catch(error => {
+                loadingIndicator.style.display = 'none';
+                errorDisplay.textContent = `請求錯誤: ${error.message}`;
+                console.error('Error:', error);
+            });
+        });
+    </script>
+</body>
+</html>

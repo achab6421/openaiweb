@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Python 安裝指南</title>
+    <style>
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            line-height: 1.6;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            color: #333;
+        }
+        
+        h1, h2, h3 {
+            color: #2c3e50;
+        }
+        
+        .section {
+            margin-bottom: 30px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+        }
+        
+        img {
+            max-width: 100%;
+            border: 1px solid #ddd;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+        
+        .step {
+            padding: 10px;
+            margin-bottom: 15px;
+            border-left: 4px solid #3498db;
+            background-color: #f0f7ff;
+        }
+        
+        code {
+            background-color: #f0f0f0;
+            padding: 2px 5px;
+            border-radius: 3px;
+            font-family: Consolas, monospace;
+        }
+        
+        .note {
+            background-color: #fff8e1;
+            padding: 10px;
+            border-left: 4px solid #ffca28;
+            margin: 15px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Python 安裝指南</h1>
+    
+    <div class="section">
+        <h2>為什麼需要安裝 Python？</h2>
+        <p>Python 是我們的程式碼測試系統的核心。為了讓您能夠在瀏覽器中執行和測試 Python 代碼，您的伺服器需要有 Python 解釋器安裝。</p>
+    </div>
+    
+    <div class="section">
+        <h2>安裝步驟</h2>
+        
+        <div class="step">
+            <h3>步驟 1: 下載 Python</h3>
+            <p>訪問 <a href="https://www.python.org/downloads/" target="_blank">Python 官方網站</a> 並下載最新版本的 Python (建議 3.8 或更高版本)</p>
+        </div>
+        
+        <div class="step">
+            <h3>步驟 2: 運行安裝程序</h3>
+            <p>運行下載的安裝檔，<strong>重要：請勾選「Add Python to PATH」選項</strong></p>
+            <div class="note">
+                <strong>提示：</strong> 在安裝時，勾選「Add Python to PATH」是關鍵步驟，這將允許系統從任何位置執行 Python。
+            </div>
+        </div>
+        
+        <div class="step">
+            <h3>步驟 3: 驗證安裝</h3>
+            <p>安裝完成後，請按照以下步驟驗證 Python 是否正確安裝：</p>
+            <ol>
+                <li>打開命令提示字元 (cmd) 或 PowerShell</li>
+                <li>輸入命令: <code>python --version</code></li>
+                <li>如果顯示正確的版本號，則表示安裝成功</li>
+            </ol>
+        </div>
+        
+        <div class="step">
+            <h3>步驟 4: 重新啟動伺服器</h3>
+            <p>安裝 Python 後，您需要重新啟動 Web 伺服器（如 Laragon, XAMPP 等），以便它能識別到新安裝的 Python。</p>
+        </div>
+    </div>
+    
+    <div class="section">
+        <h2>常見問題</h2>
+        
+        <h3>「python」不是內部或外部命令</h3>
+        <p>如果您在命令提示字元中輸入 <code>python</code> 時看到此錯誤，可能是因為：</p>
+        <ul>
+            <li>安裝時沒有勾選「Add Python to PATH」</li>
+            <li>安裝後沒有重新啟動命令提示字元或電腦</li>
+        </ul>
+        <p><strong>解決方法：</strong></p>
+        <ol>
+            <li>重新安裝 Python，確保勾選「Add Python to PATH」</li>
+            <li>或者手動添加 Python 安裝路徑到系統 PATH 環境變數</li>
+        </ol>
+    </div>
+    
+    <div class="section">
+        <h2>手動配置系統</h2>
+        <p>如果您已經安裝了 Python 但系統仍然無法找到它，您可以通過以下方式手動配置：</p>
+        
+        <h3>1. 找出 Python 安裝路徑</h3>
+        <p>Python 通常安裝在以下位置之一：</p>
+        <ul>
+            <li><code>C:\Python39</code></li>
+            <li><code>C:\Program Files\Python39</code></li>
+            <li><code>C:\Users\[用戶名]\AppData\Local\Programs\Python\Python39</code></li>
+        </ul>
+        
+        <h3>2. 修改測試代碼</h3>
+        <p>找到 <code>c:\laragon\www\openaiweb\api\test-code.php</code> 文件，並在 <code>isPythonAvailable</code> 函數中添加您的 Python 路徑：</p>
+        <pre><code>function isPythonAvailable() {
+    // 直接指定 Python 路徑
+    $GLOBALS['python_path'] = 'C:\\Path\\To\\Python\\python.exe'; // 替換為實際路徑
+    
+    // 驗證路徑是否正確
+    $output = [];
+    $return_var = 0;
+    exec('"' . $GLOBALS['python_path'] . '" --version 2>&1', $output, $return_var);
+    
+    return $return_var === 0;
+}</code></pre>
+    </div>
+    
+    <div class="section">
+        <h2>後續步驟</h2>
+        <p>安裝 Python 後，您可以：</p>
+        <ul>
+            <li><a href="test-debug.php">使用 Python 執行調試工具</a> 驗證您的安裝</li>
+            <li><a href="python-test-cases.php">運行 Python 測試用例</a> 檢查系統功能</li>
+        </ul>
+    </div>
+</body>
+</html>
