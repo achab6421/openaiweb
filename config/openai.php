@@ -2,9 +2,9 @@
 // OpenAI API 設定檔
 class OpenAIConfig {
     // OpenAI API 相關配置
-    private $apiKey = ""; // 您的OpenAI API金鑰
-    private $problemGeneratorAssistantId = ""; // 題目生成助手的ID
-    private $solutionValidatorAssistantId = ""; // 解答驗證助手的ID
+    private $apiKey;
+    private $problemGeneratorAssistantId;
+    private $solutionValidatorAssistantId;
     
     // 獲取API金鑰
     public function getApiKey() {
@@ -45,8 +45,13 @@ class OpenAIConfig {
         
         // 從環境變數獲取配置
         $this->apiKey = getenv('OPENAI_API_KEY') ?: $this->apiKey;
-        $this->problemGeneratorAssistantId = getenv('OPENAI_PROBLEM_GENERATOR_ID') ?: $this->problemGeneratorAssistantId;
-        $this->solutionValidatorAssistantId = getenv('OPENAI_SOLUTION_VALIDATOR_ID') ?: $this->solutionValidatorAssistantId;
+        $this->problemGeneratorAssistantId = getenv('PROBLEM_GENERATOR_ASSISTANT_ID') ?: 
+                                            getenv('Questiongeneration') ?: 
+                                            getenv('QUESTIONGENERATION') ?: $this->problemGeneratorAssistantId;
+        
+        $this->solutionValidatorAssistantId = getenv('SOLUTION_VALIDATOR_ASSISTANT_ID') ?: 
+                                             getenv('Codeevaluation') ?: 
+                                             getenv('CODEEVALUATION') ?: $this->solutionValidatorAssistantId;
     }
     
     // 讀取.env文件
@@ -58,7 +63,7 @@ class OpenAIConfig {
         $lines = file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
         foreach ($lines as $line) {
             // 忽略註釋行
-            if (strpos(trim($line), '#') === 0) {
+            if (strpos(trim($line), '#') === 0 || strpos(trim($line), '//') === 0) {
                 continue;
             }
             

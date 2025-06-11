@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Python題目生成測試</title>
+    <link rel="stylesheet" href="../css/problem-display.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        select, input {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        #loading {
+            display: none;
+            margin: 20px 0;
+        }
+        #result {
+            margin-top: 20px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 15px;
+            background-color: #f9f9f9;
+        }
+        .error {
+            color: red;
+            font-weight: bold;
+        }
+        pre {
+            background-color: #f0f0f0;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .raw-response {
+            margin-top: 20px;
+            border-top: 1px solid #ddd;
+            padding-top: 15px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Python題目生成測試工具</h1>
+    
+    <div class="form-group">
+        <label for="levelId">關卡ID:</label>
+        <input type="number" id="levelId" min="1" value="1">
+    </div>
+    
+    <div class="form-group">
+        <label for="chapterId">章節ID (選填):</label>
+        <input type="number" id="chapterId" min="1">
+    </div>
+    
+    <div class="form-group">
+        <label for="teachingPoint">教學重點 (選填):</label>
+        <input type="text" id="teachingPoint">
+    </div>
+    
+    <button id="generateBtn">生成題目</button>
+    
+    <div id="loading">
+        <p>正在生成題目，請稍候...</p>
+    </div>
+    
+    <div id="result">
+        <h2>生成結果</h2>
+        <div id="problemContent" class="problem-container"></div>
+        <pre id="responseData"></pre>
+        <div class="raw-response">
+            <h3>原始回應</h3>
+            <pre id="rawResponse"></pre>
+        </div>
+    </div>
+    
+    <script src="../js/problem-formatter.js"></script>
+    <script>
+        document.getElementById('generateBtn').addEventListener('click', function() {
+            // 獲取輸入值
+            const levelId = document.getElementById('levelId').value;
+            const chapterId = document.getElementById('chapterId').value;
+            const teachingPoint = document.getElementById('teachingPoint').value;
+            
+            if (!levelId) {
+                alert('請輸入關卡ID');
+                return;
+            }
+            
+            // 顯示載入中提示
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('problemContent').innerHTML = '';
+            document.getElementById('responseData').textContent = '';
+            document.getElementById('rawResponse').textContent = '';
+            
+            // 準備API請求數據
+            const requestData = {
+                levelId: parseInt(levelId)
+            };
+            
+            if (chapterId) requestData.chapterId = parseInt(chapterId);
+            if (teachingPoint) requestData.teachingPoint = teachingPoint;
+            
+            // 發送API請求
+            fetch('../api/generate-problem.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify(requestData),
+                credentials: 'same-origin'
+            })
+            .then(response => {
+                // 儲存原始回應文本
+                const clonedResponse = response.clone();
+                clonedResponse.text().then(rawText => {
+                    document.getElementById('rawResponse').textContent = rawText;
+                });
+                
+                // 嘗試解析為JSON
+                return response.json().catch(e => {
+                    throw new Error(`解析JSON失敗: ${e.message}. 請查看原始回應以獲取詳細信息。`);
+                });
+            })
+            .then(data => {
+                // 隱藏載入提示
+                document.getElementById('loading').style.display = 'none';
+                
+                // 顯示完整響應數據
+                document.getElementById('responseData').textContent = JSON.stringify(data, null, 2);
+                
+                // 處理響應
+                if (data.success) {
+                    // 使用格式化工具處理問題文本
+                    const problemHtml = ProblemFormatter.formatProblem(data.problem);
+                    document.getElementById('problemContent').innerHTML = problemHtml;
+                } else {
+                    document.getElementById('problemContent').innerHTML = `<p class="error">錯誤: ${data.message || '生成題目失敗'}</p>`;
+                }
+            })
+            .catch(error => {
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('problemContent').innerHTML = `<p class="error">請求錯誤: ${error.message}</p>`;
+                console.error('Error:', error);
+            });
+        });
+    </script>
+</body>
+</html>
+            // 處理標題
+            let html = markdown
+                .replace(/## (.*)/g, '<h2>$1</h2>')
+                .replace(/### (.*)/g, '<h3>$1</h3>')
+                .replace(/#### (.*)/g, '<h4>$1</h4>');
+                
+            // 處理代碼塊
+            html = html.replace(/```([^`]*?)```/gs, '<pre><code>$1</code></pre>');
+            
+            // 處理行內代碼
+            html = html.replace(/`([^`]*?)`/g, '<code>$1</code>');
+            
+            // 處理粗體文本
+            html = html.replace(/\*\*([^\*]*?)\*\*/g, '<strong>$1</strong>');
+            
+            // 處理斜體文本
+            html = html.replace(/\*([^\*]*?)\*/g, '<em>$1</em>');
+            
+            // 處理列表
+            html = html.replace(/- (.*)/g, '<li>$1</li>');
+            html = html.replace(/(\<li\>.*\<\/li\>)\s*(\<li\>)/g, '$1\n<li>');
+            html = html.replace(/(\<li\>.*\<\/li\>)+/g, '<ul>$&</ul>');
+            
+            // 處理段落
+            const paragraphs = html.split('\n\n');
+            html = paragraphs.map(p => {
+                // 如果段落不是以HTML標籤開始，則添加<p>標籤
+                if (p.trim() && !p.trim().startsWith('<')) {
+                    return `<p>${p}</p>`;
+                }
+                return p;
+            }).join('\n\n');
+            
+            return html;
+        }
+    </script>
+</body>
+</html>

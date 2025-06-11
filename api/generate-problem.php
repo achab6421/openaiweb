@@ -138,7 +138,7 @@ function createThread($apiKey) {
         CURLOPT_HTTPHEADER => [
             "Authorization: Bearer " . $apiKey,
             "Content-Type: application/json",
-            "OpenAI-Beta: assistants=v1"
+            "OpenAI-Beta: assistants=v2"  // 更新為 v2
         ],
     ]);
     
@@ -170,16 +170,15 @@ function addMessage($apiKey, $threadId, $levelInfo) {
 2. 難度適中，與教學重點相符
 3. 包含明確的題目描述
 4. 包含輸入和輸出示例
-5. 有清晰的提示或提示
+5. 有清晰的提示和提示
 
 格式要求：
-- 開始以markdown格式的標題「## 挑戰題目」
-- 接著是問題描述
-- 然後是輸入/輸出說明和示例
-- 如果需要，可以提供一些提示
-- 最後提供一段初始代碼框架，讓學生填充
+只需返回「挑戰題目」和具體題目內容，不要包含其他說明或格式化內容。
+題目應該包括：
+- 問題描述
+- 輸入/輸出說明和示例
 
-生成的題目應該是具體的、可執行的Python程式，而非理論問題。";
+請使用純文本格式，不要使用任何特殊標記或格式。生成的題目應該是具體的、可執行的Python程式，而非理論問題。";
 
     $curl = curl_init();
     
@@ -194,7 +193,7 @@ function addMessage($apiKey, $threadId, $levelInfo) {
         CURLOPT_HTTPHEADER => [
             "Authorization: Bearer " . $apiKey,
             "Content-Type: application/json",
-            "OpenAI-Beta: assistants=v1"
+            "OpenAI-Beta: assistants=v2"  // 更新為 v2
         ],
     ]);
     
@@ -226,7 +225,7 @@ function runAssistant($apiKey, $threadId, $assistantId) {
         CURLOPT_HTTPHEADER => [
             "Authorization: Bearer " . $apiKey,
             "Content-Type: application/json",
-            "OpenAI-Beta: assistants=v1"
+            "OpenAI-Beta: assistants=v2"  // 更新為 v2
         ],
     ]);
     
@@ -254,7 +253,7 @@ function pollForCompletion($apiKey, $threadId, $runId) {
             CURLOPT_RETURNTRANSFER => true,
             CURLOPT_HTTPHEADER => [
                 "Authorization: Bearer " . $apiKey,
-                "OpenAI-Beta: assistants=v1"
+                "OpenAI-Beta: assistants=v2"  // 更新為 v2
             ],
         ]);
         
@@ -295,7 +294,7 @@ function getAssistantResponse($apiKey, $threadId) {
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_HTTPHEADER => [
             "Authorization: Bearer " . $apiKey,
-            "OpenAI-Beta: assistants=v1"
+            "OpenAI-Beta: assistants=v2"  // 更新為 v2
         ],
     ]);
     
@@ -318,13 +317,13 @@ function getAssistantResponse($apiKey, $threadId) {
     }
     
     // 組合所有內容部分
-    $content = '';
-    foreach ($messages[0]['content'] as $part) {
-        if ($part['type'] === 'text') {
-            $content .= $part['text']['value'];
+    $fullContent = '';
+    foreach ($messages[0]['content'] as $contentPart) {
+        if ($contentPart['type'] === 'text') {
+            $fullContent .= $contentPart['text']['value'];
         }
     }
     
-    return $content;
+    return $fullContent;
 }
 ?>
