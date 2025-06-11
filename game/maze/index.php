@@ -9,13 +9,10 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
 }
 
 // 引入數據庫連接文件
-require_once "../../config/database_game.php";
+require_once "../../config/database.php";
 
 $user_id = isset($_SESSION["user_id"]) ? $_SESSION["user_id"] : 0;
 $current_level = isset($_SESSION["level"]) ? $_SESSION["level"] : 0;
-
-// 關閉連接
-$conn->close();
 ?>
 
 <!DOCTYPE html>

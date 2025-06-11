@@ -6,7 +6,7 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
     exit;
 }
 
-require_once "../../config/database_game.php";
+require_once "../../config/database.php";
 
 $user_id = $_SESSION["user_id"];
 $current_level = $_SESSION["level"];
@@ -43,7 +43,7 @@ $levels = [
 
 // ---------- AI 題目生成區塊 ----------
 $ai_content = "";
-// 讀取 .env 並取得 OPENAI_API_KEY_11
+// 讀取 .env 並取得 OPENAI_API_KEY
 $dotenv_path = dirname(__DIR__, 2) . '/.env';
 $env = [];
 if (file_exists($dotenv_path)) {
@@ -56,7 +56,9 @@ if (file_exists($dotenv_path)) {
         }
     }
 }
-$OPENAI_API_KEY = isset($env['OPENAI_API_KEY_11']) ? $env['OPENAI_API_KEY_11'] : '';
+$OPENAI_API_KEY = isset($env['OPENAI_API_KEY']) ? $env['OPENAI_API_KEY'] : '';
+
+$correct_option = ['A', 'B', 'C', 'D'][array_rand(['A', 'B', 'C', 'D'])];
 
 if (in_array($level = (isset($_GET['level']) ? intval($_GET['level']) : 0), [1, 2, 3, 4, 5])) {
     $system_prompt = <<<EOT
@@ -87,10 +89,10 @@ C:
 D:
 （Python 程式碼，正確或錯誤選項）
 
-正確答案：（A、B、C、D 其中之一，請**僅標示選項字母**）
+正確答案：{\$correct_option}
 
 ✅【內容設計規範】
-題目難度請依據 \$levels[$level]["required"] 的數值大小設計（越大越難），並根據 \$levels[$level]["desc"] 的描述設計主題。
+題目難度請依據 \$levels[\$level]["required"] 的數值大小設計（越大越難），並根據 \$levels[\$level]["desc"] 的描述設計主題。
 
 題目語言：全程使用繁體中文敘述。
 
@@ -113,6 +115,8 @@ D:
 正確答案：
 
 只需標示 A、B、C 或 D，不得包含程式碼內容或多餘文字。
+
+正解選項需生在rand(A,B,C,D)
 EOT;
 
     $user_prompt = "levels = " . var_export($levels, true) . "\nlevel = $level";
@@ -335,28 +339,46 @@ if ($current_level < $level_info['required']) {
                     body: ''
                 })
                 .then(response => {
-                    if (!response.ok) throw new Error('award.php failed');
+                    response.clone().text().then(function(txt) {
+                        console.log('award.php raw response:', txt);
+                    });
+                    if (response.status === 403) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: '權限錯誤 (403)',
+                            text: '請確認您已登入，或重新登入後再試。',
+                            confirmButtonText: '返回選單'
+                        }).then(() => {
+                            window.location.href = 'index.php';
+                        });
+                        throw new Error('award.php failed, status=403');
+                    }
+                    if (!response.ok) throw new Error('award.php failed, status=' + response.status);
                     return response.json();
                 })
                 .then(data => {
+                    console.log('award.php JSON:', data);
                     Swal.fire({
                         icon: 'success',
                         title: '答對了！',
-                        html: '攻擊力 + ' + data.attack_power + '<br>防禦力 + ' + data.defense_power,
+                        html: '攻擊力 + ' + data.attack_power + '<br>血量 + ' + data.base_hp,
                         confirmButtonText: '返回選單'
                     }).then(() => {
                         window.location.href = 'index.php';
                     });
                 })
-                .catch(() => {
-                    Swal.fire({
-                        icon: 'warning',
-                        title: '答對了，但獎勵未發放',
-                        text: '請稍後再試或聯絡管理員',
-                        confirmButtonText: '返回選單'
-                    }).then(() => {
-                        window.location.href = 'index.php';
-                    });
+                .catch((err) => {
+                    // 403 已處理，其他錯誤才進這裡
+                    if (err.message.indexOf('status=403') === -1) {
+                        Swal.fire({
+                            icon: 'warning',
+                            title: '答對了，但獎勵未發放',
+                            text: '請稍後再試或聯絡管理員\n' + err,
+                            confirmButtonText: '返回選單'
+                        }).then(() => {
+                            window.location.href = 'index.php';
+                        });
+                    }
                 });
             } else {
                 Swal.fire({

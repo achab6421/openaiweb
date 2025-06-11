@@ -6,7 +6,7 @@ define('DB_PASSWORD', '');
 define('DB_NAME', 'python_monster_village');
 
 // 嘗試連接到資料庫
-$conn = new mysqli(DB_SERVER, DB_USERNAME, DB_PASSWORD, DB_NAME, 3309);
+$conn = new mysqli(DB_SERVER, DB_USERNAME, DB_PASSWORD, DB_NAME);
 
 // 檢查連接
 if ($conn->connect_error) {

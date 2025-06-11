@@ -6,7 +6,7 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
     exit;
 }
 
-require_once "../../config/database_game.php";
+require_once "../../config/database.php";
 
 $user_id = $_SESSION["user_id"];
 $current_level = $_SESSION["level"];
@@ -43,7 +43,7 @@ $levels = [
 
 // ---------- AI 題目生成區塊 ----------
 $ai_content = "";
-// 讀取 .env 並取得 OPENAI_API_KEY_11
+// 讀取 .env 並取得 OPENAI_API_KEY
 $dotenv_path = dirname(__DIR__, 2) . '/.env';
 $env = [];
 if (file_exists($dotenv_path)) {
@@ -56,7 +56,7 @@ if (file_exists($dotenv_path)) {
         }
     }
 }
-$OPENAI_API_KEY = isset($env['OPENAI_API_KEY_11']) ? $env['OPENAI_API_KEY_11'] : '';
+$OPENAI_API_KEY = isset($env['OPENAI_API_KEY']) ? $env['OPENAI_API_KEY'] : '';
 
 if (in_array($level = (isset($_GET['level']) ? intval($_GET['level']) : 0), [1, 2, 3, 4, 5])) {
     $system_prompt = <<<EOT
@@ -300,16 +300,16 @@ if ($current_level < $level_info['required']) {
                                 <?php foreach ($options_arr as $label => $code): ?>
                                     <li class="list-group-item d-flex align-items-start" data-id="<?php echo $label; ?>">
                                         <pre class="mb-0 text-start flex-fill" style="background:#f8f9fa;border-radius:4px;padding:8px;"><?php
-                                            // 將\t轉成4個&nbsp;以呈現縮排
-                                            $display_code = preg_replace_callback('/\t/', function() {
-                                                return str_repeat('&nbsp;', 4);
-                                            }, $code);
-                                            // 也將每行開頭的空白轉成&nbsp;（保險處理）
-                                            $display_code = preg_replace_callback('/^([ ]+)/m', function($m) {
-                                                return str_repeat('&nbsp;', strlen($m[1]));
-                                            }, $display_code);
-                                            echo $display_code;
-                                        ?></pre>
+                                                                                                                                            // 將\t轉成4個&nbsp;以呈現縮排
+                                                                                                                                            $display_code = preg_replace_callback('/\t/', function () {
+                                                                                                                                                return str_repeat('&nbsp;', 4);
+                                                                                                                                            }, $code);
+                                                                                                                                            // 也將每行開頭的空白轉成&nbsp;（保險處理）
+                                                                                                                                            $display_code = preg_replace_callback('/^([ ]+)/m', function ($m) {
+                                                                                                                                                return str_repeat('&nbsp;', strlen($m[1]));
+                                                                                                                                            }, $display_code);
+                                                                                                                                            echo $display_code;
+                                                                                                                                            ?></pre>
                                     </li>
                                 <?php endforeach; ?>
                             </ul>
@@ -371,16 +371,51 @@ if ($current_level < $level_info['required']) {
                 // 答對了，呼叫 award.php
                 fetch('award.php', {
                     method: 'POST',
+                    credentials: 'same-origin', // 確保帶上 cookie
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                     body: ''
-                }).then(() => {
+                })
+                .then(response => {
+                    response.clone().text().then(function(txt) {
+                        console.log('award.php raw response:', txt);
+                    });
+                    if (response.status === 403) {
+                        Swal.fire({
+                            icon: 'error',
+                            title: '權限錯誤 (403)',
+                            text: '請確認您已登入，或重新登入後再試。',
+                            confirmButtonText: '返回選單'
+                        }).then(() => {
+                            window.location.href = 'index.php';
+                        });
+                        throw new Error('award.php failed, status=403');
+                    }
+                    if (!response.ok) throw new Error('award.php failed, status=' + response.status);
+                    return response.json();
+                })
+                .then(data => {
+                    console.log('award.php JSON:', data);
                     Swal.fire({
                         icon: 'success',
                         title: '答對了！',
+                        html: '攻擊力 + ' + data.attack_power + '<br>血量 + ' + data.base_hp,
                         confirmButtonText: '返回選單'
                     }).then(() => {
                         window.location.href = 'index.php';
                     });
+                })
+                .catch((err) => {
+                    // 403 已處理，其他錯誤才進這裡
+                    if (err.message.indexOf('status=403') === -1) {
+                        Swal.fire({
+                            icon: 'warning',
+                            title: '答對了，但獎勵未發放',
+                            text: '請稍後再試或聯絡管理員\n' + err,
+                            confirmButtonText: '返回選單'
+                        }).then(() => {
+                            window.location.href = 'index.php';
+                        });
+                    }
                 });
             } else {
                 Swal.fire({
@@ -393,4 +428,5 @@ if ($current_level < $level_info['required']) {
         });
     </script>
 </body>
+
 </html>

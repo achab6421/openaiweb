@@ -154,7 +154,7 @@ try {
                     <li><a href="dashboard.php">主頁</a></li>
                     <li><a href="profile.php">獵人檔案</a></li>
                     <li><a href="achievements.php">成就系統</a></li>
-                    <li><a href="hidden_quests.php">秘密任務</a></li>
+                    <li><a href="game/maze/index.php">秘密任務</a></li>
                     <li><a href="api/logout.php">登出</a></li>
                 </ul>
             </nav>
