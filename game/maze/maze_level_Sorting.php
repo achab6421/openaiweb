@@ -40,10 +40,8 @@ $levels = [
     ],
 ];
 
-
 // ---------- AI 題目生成區塊 ----------
-$ai_content = "";
-// 讀取 .env 並取得 OPENAI_API_KEY
+// 只在 AJAX 請求時才產生題目
 $dotenv_path = dirname(__DIR__, 2) . '/.env';
 $env = [];
 if (file_exists($dotenv_path)) {
@@ -58,7 +56,19 @@ if (file_exists($dotenv_path)) {
 }
 $OPENAI_API_KEY = isset($env['OPENAI_API_KEY']) ? $env['OPENAI_API_KEY'] : '';
 
-if (in_array($level = (isset($_GET['level']) ? intval($_GET['level']) : 0), [1, 2, 3, 4, 5])) {
+$is_ajax = isset($_GET['ajax']) && $_GET['ajax'] === '1';
+if ($is_ajax) {
+    if (empty($OPENAI_API_KEY)) {
+        echo json_encode([
+            'error' => '未設定 OPENAI_API_KEY，請聯絡管理員。'
+        ]);
+        exit;
+    }
+    $level = isset($_GET['level']) ? intval($_GET['level']) : 0;
+    if (!in_array($level, [1, 2, 3, 4, 5])) {
+        echo json_encode(['error' => '關卡參數錯誤']);
+        exit;
+    }
     $system_prompt = <<<EOT
 你是一位 Python 教學任務設計助理，根據使用者提供的關卡資訊 \$levels 與當前關卡 \$level，自動產生一題符合難度的 Python 單選題。請嚴格遵守以下輸出格式與規則產出題目。
 
@@ -123,22 +133,40 @@ EOT;
     curl_setopt($ch, CURLOPT_POST, true);
     curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
     $result = curl_exec($ch);
+    $curl_errno = curl_errno($ch);
+    $curl_error = curl_error($ch);
     curl_close($ch);
-    $response = json_decode($result, true);
 
-    if (isset($response["choices"][0]["message"]["content"])) {
-        $ai_content = nl2br(htmlspecialchars($response["choices"][0]["message"]["content"]));
-    } else {
-        $ai_content = "<p>無法取得題目，請稍後再試。</p>";
+    if ($curl_errno) {
+        echo json_encode([
+            'error' => 'curl 錯誤: ' . $curl_error
+        ]);
+        exit;
     }
 
-    // 先把 <br /> 全部轉成換行符號方便處理
-    $clean_text = str_replace('<br />', "\n", $ai_content);
-    $clean_text = html_entity_decode($clean_text, ENT_QUOTES, 'UTF-8');
-    $clean_text = str_replace(["\r\n", "\r"], "\n", $clean_text);
-    $clean_text = preg_replace("/\n{2,}/", "\n", $clean_text); // 所有連續空行只保留1行
-    echo "<script>console.log(" . json_encode($clean_text) . ");</script>";
+    $response = json_decode($result, true);
 
+    if (isset($response['error'])) {
+        echo json_encode([
+            'error' => 'OpenAI API 錯誤: ' . $response['error']['message'],
+            'raw' => $result
+        ]);
+        exit;
+    }
+
+    if (isset($response["choices"][0]["message"]["content"])) {
+        $ai_content = $response["choices"][0]["message"]["content"];
+    } else {
+        echo json_encode([
+            'error' => '無法取得題目內容，請稍後再試。',
+            'raw' => $result
+        ]);
+        exit;
+    }
+
+    // 處理內容
+    $clean_text = str_replace(["\r\n", "\r"], "\n", $ai_content);
+    $clean_text = preg_replace("/\n{2,}/", "\n", $clean_text);
     // 用 explode("選項:", $clean_text) 切分
     $question_text = '';
     $options = '';
@@ -150,30 +178,11 @@ EOT;
         $question_text = trim($clean_text);
         $options = '';
     }
-
-    // 進一步處理選項，每個選項格式為「數字.內容」
-    $options_arr = [];
-    if (!empty($options)) {
-        if (preg_match_all('/(\d+)[\.:：]\s*(.+)/u', $options, $matches, PREG_SET_ORDER)) {
-            foreach ($matches as $match) {
-                $num = $match[1];
-                $code = trim($match[2]);
-                $options_arr[$num] = $code;
-            }
-        }
-    }
-
-    echo "<script>console.log(" . json_encode($question_text) . ");</script>";
-    echo "<script>console.log(" . json_encode($options) . ");</script>";
-
     // 處理題目描述格式
-    // 只保留「題目描述：」到「範例輸出：」的區塊，並去除多餘空行
     $question_text = preg_replace('/\s*\n*(範例輸入：)/u', "\n$1", $question_text);
     $question_text = preg_replace('/\s*\n*(範例輸出：)/u', "\n$1", $question_text);
     $question_text = preg_replace("/\n{3,}/", "\n\n", $question_text);
     $question_text = trim($question_text);
-
-    // 每行前後去空白，並去除多餘空行
     $lines = explode("\n", $question_text);
     $lines = array_map('rtrim', $lines);
     $lines = array_map('ltrim', $lines);
@@ -181,30 +190,21 @@ EOT;
         return $l !== '';
     }));
 
-    echo "<script>console.log(" . json_encode($options) . ");</script>";
-
-    // 將 $options 轉成陣列，key 為選項數字，value 為程式碼內容（保留縮排與多行，並將每行前的空格轉為\t）
+    // 將 $options 轉成陣列，key 為選項數字，value 為保留縮排的程式碼
     $options_arr = [];
-    // 處理為陣列格式，key 為選項數字，value 為保留縮排的程式碼
     $lines = explode("\n", $options);
-
     foreach ($lines as $line) {
-        // 使用 regex 抓取選項號與內容
-        if (preg_match('/^(\d+)\.(.*)$/', $line, $matches)) {
+        if (preg_match('/^(\d+)[\.:：]\s*(.*)$/', $line, $matches)) {
             $key = $matches[1];
             $code = $matches[2];
-
-            // 將每一行前方空白統一轉成 \t
-            $code = preg_replace_callback('/^( +)/', function ($m) {
-                $spaceCount = strlen($m[1]);
-                return str_repeat("\t", intval($spaceCount / 4)); // 每四個空白視為一個 tab
-            }, $code);
-
             $options_arr[$key] = $code;
         }
     }
-
-    echo "<script>console.log(" . json_encode($options_arr) . ");</script>";
+    echo json_encode([
+        'question_text' => $question_text,
+        'options_arr' => $options_arr
+    ]);
+    exit;
 }
 // ---------- END AI 題目生成區塊 ----------
 
@@ -229,127 +229,137 @@ if ($current_level < $level_info['required']) {
 <head>
     <meta charset="UTF-8">
     <title><?php echo htmlspecialchars($level_info['name']); ?> - 迷宮尋寶</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- level.php 樣式 -->
+    <link rel="stylesheet" href="../../assets/css/style.css">
+    <link rel="stylesheet" href="../../assets/css/dashboard.css">
+    <link rel="stylesheet" href="../../assets/css/battle.css">
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.1/css/all.min.css">
-    <style>
-        body {
-            background: url('../assets/images/maze-bg.jpg') no-repeat center center fixed;
-            background-size: cover;
-            min-height: 100vh;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            color: #333;
-        }
-
-        .maze-level-detail {
-            background: rgba(255, 255, 255, 0.92);
-            border-radius: 15px;
-            margin: 40px auto;
-            padding: 40px 30px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
-        }
-
-        .maze-level-title {
-            font-size: 2rem;
-            font-weight: bold;
-            color: #D81B60;
-            margin-bottom: 20px;
-        }
-
-        .maze-level-desc {
-            font-size: 1.15rem;
-            margin-bottom: 30px;
-        }
-
-        .btn-back {
-            margin-right: 10px;
-        }
-    </style>
+    <!-- 引入 jQuery (AJAX 套件) -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <!-- SortableJS -->
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
 </head>
 
 <body>
-    <div class="container">
-        <div class="maze-level-detail text-center">
-            <div class="maze-level-title">
-                <i class="fas fa-dungeon me-2"></i><?php echo htmlspecialchars($level_info['name']); ?>
+    <div class="battle-container">
+        <div class="battle-header">
+            <div class="header-info">
+                <a href="index.php" class="back-button"><i class="fas fa-arrow-left"></i> 返回迷宮選單</a>
+                <h1><?php echo htmlspecialchars($level_info['name']); ?></h1>
             </div>
-            <div class="maze-level-desc">
-                <?php echo htmlspecialchars($level_info['desc']); ?>
-            </div>
-            <div class="mb-4">
-                <span class="badge bg-primary fs-6">需要等級 <?php echo $level_info['required']; ?></span>
-                <span class="badge bg-success fs-6">你的等級 <?php echo $current_level; ?></span>
-            </div>
-            <!-- 顯示題目內容 -->
-            <div class="card mt-4 text-start">
-                <div class="card-header bg-warning text-dark fw-bold">
-                    關卡題目
+            <div class="player-stats">
+                <div class="player-name"><?php echo htmlspecialchars($_SESSION['username']); ?></div>
+                <div class="stats-row">
+                    <div class="stat-item">LV. <?php echo $_SESSION['level']; ?></div>
+                    <div class="stat-item">ATK: <?php echo $_SESSION['attack_power']; ?></div>
+                    <div class="stat-item">HP: <span id="player-hp"><?php echo $_SESSION['base_hp']; ?></span>/<?php echo $_SESSION['base_hp']; ?></div>
                 </div>
-                <div class="card-body">
-                    <?php
-                    // 顯示題目描述
-                    echo nl2br(htmlspecialchars($question_text));
-                    ?>
-                </div>
-                <?php if (!empty($options_arr)): ?>
-                    <div class="card-header bg-warning text-dark fw-bold">
-                        選項
-                    </div>
-                    <div class="card-body">
-                        <form class="mt-2" id="sortableForm">
-                            <ul id="sortable-options" class="list-group">
-                                <?php foreach ($options_arr as $label => $code): ?>
-                                    <li class="list-group-item d-flex align-items-start" data-id="<?php echo $label; ?>">
-                                        <pre class="mb-0 text-start flex-fill" style="background:#f8f9fa;border-radius:4px;padding:8px;"><?php
-                                                                                                                                            // 將\t轉成4個&nbsp;以呈現縮排
-                                                                                                                                            $display_code = preg_replace_callback('/\t/', function () {
-                                                                                                                                                return str_repeat('&nbsp;', 4);
-                                                                                                                                            }, $code);
-                                                                                                                                            // 也將每行開頭的空白轉成&nbsp;（保險處理）
-                                                                                                                                            $display_code = preg_replace_callback('/^([ ]+)/m', function ($m) {
-                                                                                                                                                return str_repeat('&nbsp;', strlen($m[1]));
-                                                                                                                                            }, $display_code);
-                                                                                                                                            echo $display_code;
-                                                                                                                                            ?></pre>
-                                    </li>
-                                <?php endforeach; ?>
-                            </ul>
-                        </form>
-                    </div>
-                <?php endif; ?>
             </div>
-            <a href="index.php" class="btn btn-outline-secondary btn-back">
-                <i class="fas fa-arrow-left mt-2"></i> 返回迷宮選單
-            </a>
-            <button type="button" class="btn btn-warning ms-2" id="resetBtn">
-                <i class="fas fa-undo"></i> 重製題目
-            </button>
-            <button type="button" class="btn btn-success ms-2" id="submitAnswerBtn">
-                <i class="fas fa-paper-plane"></i> 提交
-            </button>
-            <!-- end 顯示題目內容 -->
+        </div>
+
+        <div class="battle-content">
+            <div class="code-section">
+                <div class="problem-container" style="height: 200px;">
+                    <h2>挑戰題目</h2>
+                    <div id="question-area" class="problem-description">
+                        <div id="loading-msg" class="loading">題目生成中...</div>
+                    </div>
+                </div>
+                <div id="options-area"></div>
+            </div>
+            <div class="battle-section">
+                <div class="battle-message">
+                    <div class="message-content" id="battle-message-content">
+                        請將下方程式碼行拖曳排序，組成正確的 Python 程式！
+                    </div>
+                </div>
+                <div class="battle-tutorial" style="height: 30%;">
+                    <h3 class="tutorial-title"><i class="fas fa-book"></i> 關卡說明</h3>
+                    <div class="tutorial-content">
+                        <div class="maze-level-desc">
+                            <?php echo htmlspecialchars($level_info['desc']); ?>
+                        </div>
+                        <div class="mb-4">
+                            <span class="badge bg-primary fs-6">需要等級 <?php echo $level_info['required']; ?></span>
+                            <span class="badge bg-success fs-6">你的等級 <?php echo $current_level; ?></span>
+                        </div>
+                    </div>
+                </div>
+                <div class="battle-actions mt-3">
+                    <button type="button" class="btn btn-warning ms-2" id="resetBtn">
+                        <i class="fas fa-undo"></i> 重製題目
+                    </button>
+                    <button type="button" class="btn btn-success ms-2" id="submitAnswerBtn" style="display:none;">
+                        <i class="fas fa-paper-plane"></i> 提交
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
     <!-- SweetAlert2 -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <!-- SortableJS -->
-    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
     <script>
-        // 啟用 SortableJS
-        var sortable = new Sortable(document.getElementById('sortable-options'), {
-            animation: 150
+        // 類似 choose 頁面，AJAX 載入題目
+        $(function() {
+            let url = window.location.pathname + window.location.search + (window.location.search ? '&' : '?') + 'ajax=1';
+            $.get(url)
+                .done(function(data) {
+                    if (typeof data === 'string') {
+                        try { data = JSON.parse(data); } catch(e) {}
+                    }
+                    console.log('AJAX 回傳資料:', data);
+                    if (data.error) {
+                        $('#question-area').html('<div class="text-danger">題目載入失敗：' + data.error + '</div>');
+                        $('#options-area').html('');
+                        $('#submitAnswerBtn').hide();
+                        return;
+                    }
+                    $('#question-area').html(
+                        '<div>' + (data.question_text ? data.question_text.replace(/\n/g, '<br>') : '題目載入失敗') + '</div>'
+                    );
+                    if (data.options_arr && Object.keys(data.options_arr).length > 0) {
+                        let html = '<div class="card-header bg-warning text-dark fw-bold">選項</div>';
+                        html += '<div class="card-body"><form class="mt-2" id="sortableForm"><ul id="sortable-options" class="list-group">';
+                        for (const label in data.options_arr) {
+                            let code = data.options_arr[label]
+                                .replace(/\t/g, '&nbsp;&nbsp;&nbsp;&nbsp;')
+                                .replace(/^([ ]+)/gm, function(m) { return m.replace(/ /g, '&nbsp;'); });
+                            html += `<li class="list-group-item d-flex align-items-start" data-id="${label}">
+                                <pre class="mb-0 text-start flex-fill" style="background:#f8f9fa;border-radius:4px;padding:8px;">${code}</pre>
+                            </li>`;
+                        }
+                        html += '</ul></form></div>';
+                        $('#options-area').html(html);
+                        $('#submitAnswerBtn').show();
+                        $('#loading-msg').remove();
+                        // 啟用 SortableJS
+                        new Sortable(document.getElementById('sortable-options'), { animation: 150 });
+                    } else {
+                        $('#options-area').html('');
+                        $('#submitAnswerBtn').hide();
+                    }
+                })
+                .fail(function(jqXHR, textStatus, errorThrown) {
+                    $('#question-area').html('<div class="text-danger">AJAX 請求失敗：' + textStatus + ' ' + errorThrown + '</div>');
+                    $('#options-area').html('');
+                    $('#submitAnswerBtn').hide();
+                    console.log('AJAX 錯誤:', jqXHR, textStatus, errorThrown);
+                });
         });
 
         // 重製題目按鈕
-        document.getElementById('resetBtn').addEventListener('click', function() {
+        $('#resetBtn').on('click', function() {
             window.location.reload();
         });
 
-        document.getElementById('submitAnswerBtn').addEventListener('click', function() {
-            // 取得目前排序
-            var items = document.querySelectorAll('#sortable-options li');
+        // 提交按鈕事件
+        $('#submitAnswerBtn').on('click', function() {
+            var items = $('#sortable-options li');
             var userOrder = [];
-            items.forEach(function(li) {
-                userOrder.push(parseInt(li.getAttribute('data-id')));
+            items.each(function() {
+                userOrder.push(parseInt($(this).attr('data-id')));
             });
             if (userOrder.length === 0) {
                 Swal.fire({
@@ -368,10 +378,9 @@ if ($current_level < $level_info['required']) {
                 }
             }
             if (isContinuous) {
-                // 答對了，呼叫 award.php
                 fetch('award.php', {
                     method: 'POST',
-                    credentials: 'same-origin', // 確保帶上 cookie
+                    credentials: 'same-origin',
                     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
                     body: ''
                 })
@@ -405,7 +414,6 @@ if ($current_level < $level_info['required']) {
                     });
                 })
                 .catch((err) => {
-                    // 403 已處理，其他錯誤才進這裡
                     if (err.message.indexOf('status=403') === -1) {
                         Swal.fire({
                             icon: 'warning',
@@ -428,5 +436,4 @@ if ($current_level < $level_info['required']) {
         });
     </script>
 </body>
-
 </html>
