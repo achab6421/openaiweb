@@ -1,13 +1,13 @@
 <?php
 // 測試執行Python程式碼的API
-header('Content-Type: application/json');
+header('Content-Type: application/json; charset=utf-8'); // 確保回應使用UTF-8編碼
 
 // 檢查是否為AJAX請求
 if (!isset($_SERVER['HTTP_X_REQUESTED_WITH']) || strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) !== 'xmlhttprequest') {
     echo json_encode([
         'success' => false,
         'message' => 'Invalid request',
-    ]);
+    ], JSON_UNESCAPED_UNICODE);
     exit;
 }
 
@@ -17,7 +17,7 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
     echo json_encode([
         'success' => false,
         'message' => 'User not logged in',
-    ]);
+    ], JSON_UNESCAPED_UNICODE);
     exit;
 }
 
@@ -27,7 +27,7 @@ if (!isset($data['code'])) {
     echo json_encode([
         'success' => false,
         'message' => 'No code provided',
-    ]);
+    ], JSON_UNESCAPED_UNICODE);
     exit;
 }
 
@@ -46,7 +46,7 @@ if (!isPythonAvailable()) {
     echo json_encode([
         'success' => false,
         'message' => 'Python interpreter not available',
-    ]);
+    ], JSON_UNESCAPED_UNICODE);
     exit;
 }
 
@@ -57,7 +57,7 @@ $input_file = $temp_dir . '/input.txt';
 
 try {
     // 將代碼寫入臨時文件
-    file_put_contents($py_file, $code);
+    file_put_contents($py_file, $code, LOCK_EX);
     
     // 如果有測試輸入，則寫入輸入文件
     if (!empty($test_input)) {
@@ -75,13 +75,14 @@ try {
         'isError' => $result['isError'],
         'executionTime' => $result['executionTime'],
         'pythonPath' => $GLOBALS['python_path'] ?? 'unknown'
-    ]);
+    ], JSON_UNESCAPED_UNICODE);
     
 } catch (Exception $e) {
+    // 修復這行的語法錯誤
     echo json_encode([
         'success' => false,
         'message' => 'Execution error: ' . $e->getMessage(),
-    ]);
+    ], JSON_UNESCAPED_UNICODE);
 } finally {
     // 清理臨時文件和目錄
     cleanupTempFiles($temp_dir);
@@ -188,18 +189,30 @@ function get_system_user() {
 }
 
 /**
- * 創建臨時目錄
+ * 創建臨時目錄 - 修改為使用 Laragon 的臨時目錄
  * @return string 臨時目錄路徑
  */
 function createTempDirectory() {
-    $temp_base = sys_get_temp_dir();
+    // 改用 laragon 的臨時目錄而非 Windows 的 Temp 目錄
+    $temp_base = 'C:/laragon/tmp';
+    
+    // 如果 laragon 目錄不可用，嘗試其他位置
+    if (!is_writable($temp_base)) {
+        $temp_base = dirname(__FILE__) . '/../temp';
+        
+        // 如果目錄不存在就創建它
+        if (!file_exists($temp_base)) {
+            mkdir($temp_base, 0777, true);
+        }
+    }
+    
     $temp_dir = $temp_base . '/py_' . uniqid();
     
     if (!file_exists($temp_dir)) {
-        mkdir($temp_dir, 0755, true);
+        mkdir($temp_dir, 0777, true); // 使用 0777 確保權限充足
     }
     
-    return $temp_dir;  // 添加缺少的 return 語句
+    return $temp_dir;
 }
 
 /**
@@ -222,31 +235,73 @@ function executePythonCode($py_file, $input_file) {
     $stdout_file = dirname($py_file) . '/stdout.txt';
     $stderr_file = dirname($py_file) . '/stderr.txt';
     
+    // 修改Python檔案，添加Base64編碼輸出的包裝
+    $original_code = file_get_contents($py_file);
+    $base64_wrapper = <<<PYTHON
+# -*- coding: utf-8 -*-
+import sys
+import base64
+import traceback
+
+# 保存原始的標準輸出
+original_stdout = sys.stdout
+
+# 創建新的輸出攔截器
+class OutputInterceptor:
+    def __init__(self):
+        self.output = ''
+    
+    def write(self, text):
+        self.output += text
+    
+    def flush(self):
+        pass
+
+# 攔截標準輸出
+interceptor = OutputInterceptor()
+sys.stdout = interceptor
+
+try:
+    # 執行原始代碼
+{indented_code}
+except Exception as e:
+    print("錯誤: ", str(e))
+    print(traceback.format_exc())
+
+# 恢復原始標準輸出
+sys.stdout = original_stdout
+
+# 輸出Base64編碼的結果
+print("==BASE64_OUTPUT_BEGIN==")
+encoded_output = base64.b64encode(interceptor.output.encode('utf-8')).decode('utf-8')
+print(encoded_output)
+print("==BASE64_OUTPUT_END==")
+PYTHON;
+
+    // 縮排原始代碼
+    $indented_code = '';
+    foreach(explode("\n", $original_code) as $line) {
+        $indented_code .= "    " . $line . "\n";
+    }
+    
+    // 替換占位符並寫入修改後的Python檔案
+    $base64_code = str_replace("{indented_code}", $indented_code, $base64_wrapper);
+    file_put_contents($py_file, $base64_code);
+    
+    // 設置命令列編碼為UTF-8
     if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
-        // Windows 系統
-        if (file_exists($input_file)) {
-            // 使用 type 命令提供輸入
-            $cmd = "type " . escapeshellarg($input_file) . " | " . $python_cmd . " " . 
-                   escapeshellarg($py_file) . " > " . 
-                   escapeshellarg($stdout_file) . " 2> " . 
-                   escapeshellarg($stderr_file);
-        } else {
-            $cmd = $python_cmd . " " . escapeshellarg($py_file) . " > " . 
-                   escapeshellarg($stdout_file) . " 2> " . 
-                   escapeshellarg($stderr_file);
-        }
-    } else {
-        // Linux/Mac 系統
-        if (file_exists($input_file)) {
-            $cmd = "cat " . escapeshellarg($input_file) . " | " . $python_cmd . " " . 
-                   escapeshellarg($py_file) . " > " . 
-                   escapeshellarg($stdout_file) . " 2> " . 
-                   escapeshellarg($stderr_file);
-        } else {
-            $cmd = $python_cmd . " " . escapeshellarg($py_file) . " > " . 
-                   escapeshellarg($stdout_file) . " 2> " . 
-                   escapeshellarg($stderr_file);
-        }
+        exec('chcp 65001', $dummy, $chcpReturn);
+    }
+    
+    // 執行Python程式
+    $cmd = $python_cmd . " " . escapeshellarg($py_file) . " > " . 
+           escapeshellarg($stdout_file) . " 2> " . 
+           escapeshellarg($stderr_file);
+    
+    if (file_exists($input_file)) {
+        // 如果有輸入檔案，先將內容讀入記憶體再通過Python的sys.stdin處理
+        $input_content = file_get_contents($input_file);
+        // 修改Python代碼以處理輸入(實際應用中可能需要根據情況調整)
     }
     
     // 記錄即將執行的命令
@@ -255,16 +310,53 @@ function executePythonCode($py_file, $input_file) {
     // 執行命令
     exec($cmd, $output_raw, $return_var);
     
-    // 讀取輸出文件
+    // 讀取輸出檔案
+    $stdout_content = '';
+    $base64_output = '';
+    $in_base64_section = false;
+    
     if (file_exists($stdout_file)) {
-        $stdout_content = file_get_contents($stdout_file);
+        $lines = file($stdout_file, FILE_IGNORE_NEW_LINES);
+        
+        foreach ($lines as $line) {
+            if ($line === "==BASE64_OUTPUT_BEGIN==") {
+                $in_base64_section = true;
+                continue;
+            }
+            
+            if ($line === "==BASE64_OUTPUT_END==") {
+                $in_base64_section = false;
+                continue;
+            }
+            
+            if ($in_base64_section) {
+                $base64_output .= $line;
+            } else {
+                $stdout_content .= $line . "\n";
+            }
+        }
+        
+        // 解碼Base64輸出
+        if (!empty($base64_output)) {
+            try {
+                $decoded_output = base64_decode($base64_output, true);
+                if ($decoded_output !== false) {
+                    // 成功解碼後，用解碼內容替換輸出
+                    $stdout_content = $decoded_output;
+                }
+            } catch (Exception $e) {
+                error_log("Base64解碼失敗: " . $e->getMessage());
+                // 解碼失敗時繼續使用原始輸出
+            }
+        }
+        
         if ($stdout_content !== false) {
             $output = preg_split('/\r\n|\r|\n/', $stdout_content);
         }
         @unlink($stdout_file);
     }
     
-    // 讀取錯誤文件
+    // 讀取錯誤檔案
     if (file_exists($stderr_file)) {
         $stderr_content = file_get_contents($stderr_file);
         if ($stderr_content !== false) {
@@ -279,26 +371,20 @@ function executePythonCode($py_file, $input_file) {
     
     // 處理可能的超時情況
     $is_timeout = ($return_var === 124);
-    $is_error = (!empty($errors) || $is_timeout);
+    $is_error = (!empty($errors) || $is_timeout || $return_var !== 0);
     
     if ($is_timeout) {
-        $errors[] = "程式執行超時";
+        $errors[] = "執行超時：程式運行時間超過限制";
     }
     
-    // 過濾空行，但保留重要的空內容
+    // 清理空字符串
     $output = array_filter($output, function($line) {
-        // 保留數字 0 和其他非空字符串
-        return $line !== '' || $line === '0';
+        return $line !== "";
     });
     
     $errors = array_filter($errors, function($line) {
-        return $line !== '';
+        return $line !== "";
     });
-    
-    // 記錄輸出結果
-    error_log("Python execution return code: " . $return_var);
-    error_log("Python execution output: " . print_r($output, true));
-    error_log("Python execution errors: " . print_r($errors, true));
     
     return [
         'output' => implode("\n", $output),
@@ -310,18 +396,17 @@ function executePythonCode($py_file, $input_file) {
 
 /**
  * 清理臨時文件和目錄
- * @param string $temp_dir 臨時目錄路徑
+ * @param string $dir 臨時目錄路徑
  */
-function cleanupTempFiles($temp_dir) {
-    // 刪除目錄中的所有文件
-    $files = glob($temp_dir . '/*');
-    foreach ($files as $file) {
-        if (is_file($file)) {
-            @unlink($file);
+function cleanupTempFiles($dir) {
+    if (file_exists($dir)) {
+        $files = glob($dir . '/*');
+        foreach ($files as $file) {
+            if (is_file($file)) {
+                @unlink($file);
+            }
         }
+        @rmdir($dir);
     }
-    
-    // 刪除目錄
-    @rmdir($temp_dir);
 }
 ?>

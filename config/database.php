@@ -12,11 +12,11 @@ class Database {
         $this->conn = null;
 
         try {
-            $this->conn = new PDO('mysql:host=' . $this->host .';dbname=' . $this->db_name, $this->username, $this->password);
+            $this->conn = new PDO("mysql:host=" . $this->host . ";dbname=" . $this->db_name, $this->username, $this->password);
+            $this->conn->exec("set names utf8mb4"); // 使用 UTF-8 字符集
             $this->conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-            $this->conn->exec('set names utf8');
-        } catch(PDOException $e) {
-            echo '連接資料庫失敗: ' . $e->getMessage();
+        } catch(PDOException $exception) {
+            echo "Connection error: " . $exception->getMessage();
         }
 
         return $this->conn;

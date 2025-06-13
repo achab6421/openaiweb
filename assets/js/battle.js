@@ -110,8 +110,8 @@ function extractCodeFramework(problem) {
 
 // 測試程式碼
 function testCode() {
-    const outputDisplay = document.getElementById('output-display');
     const code = editor.getValue();
+    const outputDisplay = document.getElementById('output-display');
     
     if (!code.trim()) {
         outputDisplay.innerHTML = '請先編寫程式碼';
@@ -119,43 +119,101 @@ function testCode() {
         return;
     }
     
-    // 顯示載入中
-    outputDisplay.innerHTML = '執行中...';
+    // 顯示測試中...
+    outputDisplay.innerHTML = '<div class="loading">測試運行中...</div>';
     outputDisplay.classList.remove('error');
     
-    // 發送代碼到後端進行測試
-    fetch('api/test-code.php', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-Requested-With': 'XMLHttpRequest'
-        },
-        body: JSON.stringify({
-            code: code
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            // 顯示執行結果
-            outputDisplay.innerHTML = data.output || '程式執行完成，沒有輸出結果。';
-            if (data.isError) {
-                outputDisplay.classList.add('error');
-                updateBattleMessage('程式執行失敗，請修正錯誤後再試。');
-            } else {
+    // 添加測試調試日誌
+    console.log('測試代碼請求開始，代碼長度:', code.length);
+    
+    // 使用XMLHttpRequest而不是fetch，因為可能有瀏覽器兼容性問題
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', 'api/test-code.php', true);
+    xhr.setRequestHeader('Content-Type', 'application/json;charset=UTF-8');
+    xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+    xhr.responseType = 'json';
+    
+    xhr.onload = function() {
+        if (xhr.status >= 200 && xhr.status < 300) {
+            console.log('測試代碼請求成功:', xhr.response);
+            const data = xhr.response;
+            
+            if (data && data.success === true) {
+                let resultHTML = '';
+                
+                // 顯示輸出
+                if (data.output && data.output.trim()) {
+                    resultHTML += '<h4>程式輸出:</h4>';
+                    resultHTML += `<pre class="output">${formatOutput(data.output)}</pre>`;
+                } else {
+                    resultHTML += '<p>程式沒有輸出</p>';
+                }
+                
+                // 如果有警告/錯誤但執行成功，也顯示
+                if (data.errors && data.errors.trim() && !data.isError) {
+                    resultHTML += '<h4>警告/注意:</h4>';
+                    resultHTML += `<pre class="warning">${formatOutput(data.errors)}</pre>`;
+                }
+                
+                // 顯示執行時間
+                if (data.executionTime) {
+                    resultHTML += `<div class="execution-info">執行時間: ${data.executionTime} 毫秒</div>`;
+                }
+                
+                outputDisplay.innerHTML = resultHTML;
                 outputDisplay.classList.remove('error');
-                updateBattleMessage('程式執行成功！');
+            } else {
+                outputDisplay.innerHTML = `<div class="error-title">執行錯誤</div>`;
+                
+                if (data && data.message) {
+                    outputDisplay.innerHTML += `<div>${data.message}</div>`;
+                }
+                
+                if (data && data.errors && data.errors.trim()) {
+                    outputDisplay.innerHTML += `<pre class="error-details">${formatOutput(data.errors)}</pre>`;
+                }
+                
+                outputDisplay.classList.add('error');
             }
         } else {
-            outputDisplay.innerHTML = `執行失敗: ${data.message}`;
+            console.error('測試代碼請求失敗:', xhr.status, xhr.statusText);
+            outputDisplay.innerHTML = `測試運行時發生錯誤: HTTP ${xhr.status} ${xhr.statusText}`;
             outputDisplay.classList.add('error');
         }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        outputDisplay.innerHTML = '執行期間發生錯誤，請稍後再試。';
+    };
+    
+    xhr.onerror = function() {
+        console.error('測試代碼網絡錯誤');
+        outputDisplay.innerHTML = '網絡錯誤，無法連接到伺服器';
         outputDisplay.classList.add('error');
+    };
+    
+    const data = JSON.stringify({
+        code: code,
+        levelId: levelData.levelId || 0
     });
+    
+    console.log('發送請求數據...');
+    xhr.send(data);
+}
+
+// 將輸出格式化為HTML，處理中文字符
+function formatOutput(output) {
+    if (!output) return '無輸出';
+    
+    // 確保輸出是字符串
+    if (typeof output !== 'string') {
+        output = String(output);
+    }
+    
+    // HTML編碼以防止XSS攻擊，同時保留換行符
+    return output
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;')
+        .replace(/\n/g, '<br>');
 }
 
 // 提交程式碼答案
@@ -184,39 +242,55 @@ function submitCode() {
     outputDisplay.classList.remove('error');
     updateBattleMessage('正在檢查您的答案...');
     
-    // 發送代碼到後端進行驗證
-    fetch('api/validate-solution.php', {
+    // 添加除錯訊息
+    console.log("提交答案:", {
+        levelId: levelData.levelId,
+        userCode: code.substring(0, 50) + "...", // 只顯示前50字元
+        threadId: currentThreadId,
+        problemStatementLength: currentProblem.length
+    });
+    
+    // 發送代碼到後端進行評估
+    fetch('api/evaluate-answer.php', {
         method: 'POST',
         headers: {
-            'Content-Type': 'application/json',
+            'Content-Type': 'application/json; charset=UTF-8', // 明確指定 UTF-8 編碼
             'X-Requested-With': 'XMLHttpRequest'
         },
         body: JSON.stringify({
-            code: code,
             levelId: levelData.levelId,
-            problem: currentProblem,
-            threadId: currentThreadId
+            userCode: code,
+            threadId: currentThreadId,
+            problemStatement: currentProblem
         })
     })
-    .then(response => response.json())
+    .then(response => {
+        // 檢查回應編碼
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+            return response.json();
+        }
+        throw new Error(`回應格式不正確: ${contentType}`);
+    })
     .then(data => {
         // 恢復提交按鈕
         submitButton.disabled = false;
         submitButton.textContent = '提交答案';
         
+        console.log("API回應數據:", data);
+        
         if (data.success) {
-            // 處理驗證結果
-            const result = data.result;
+            // 處理評估結果
+            const isCorrect = data.isCorrect;
+            const evaluationText = data.evaluation;
             
-            // 顯示回饋
-            outputDisplay.innerHTML = `
-                <strong>${result.isCorrect ? '恭喜，答案正確！' : '答案不正確'}</strong>
-                <p>${result.feedback}</p>
-                <p>${result.explanation}</p>
-            `;
+            console.log("答案正確?", isCorrect, "評估文本長度:", evaluationText?.length);
+            
+            // 顯示回饋 - 將評估結果格式化後顯示
+            outputDisplay.innerHTML = formatEvaluationResult(evaluationText, isCorrect);
             
             // 根據結果執行戰鬥邏輯
-            if (result.isCorrect) {
+            if (isCorrect) {
                 outputDisplay.classList.remove('error');
                 playerAttack();
             } else {
@@ -224,19 +298,40 @@ function submitCode() {
                 monsterAttack();
             }
         } else {
+            console.error("API錯誤:", data.message);
             outputDisplay.innerHTML = `驗證失敗: ${data.message}`;
             outputDisplay.classList.add('error');
         }
     })
     .catch(error => {
+        console.error('Error:', error);
+        outputDisplay.innerHTML = '驗證期間發生錯誤，可能是中文編碼問題。詳細錯誤: ' + error.message;
+        outputDisplay.classList.add('error');
+        
         // 恢復提交按鈕
         submitButton.disabled = false;
         submitButton.textContent = '提交答案';
-        
-        console.error('Error:', error);
-        outputDisplay.innerHTML = '驗證期間發生錯誤，請稍後再試。';
-        outputDisplay.classList.add('error');
     });
+}
+
+// 修正格式化評估結果函數 (如果有問題)
+function formatEvaluationResult(evaluation, isCorrect) {
+    if (!evaluation) {
+        return `<strong>${isCorrect ? '恭喜，答案正確！' : '答案不正確'}</strong><br>但評估內容為空`;
+    }
+    
+    // 先創建基本標題
+    let formattedResult = `<strong>${isCorrect ? '恭喜，答案正確！' : '答案不正確'}</strong><br><br>`;
+    
+    // 將評估內容格式化
+    const formattedEvaluation = evaluation
+        .replace(/\n/g, '<br>')
+        .replace(/```python([\s\S]*?)```/g, '<pre class="code-block"><code>$1</code></pre>')
+        .replace(/評估結果: (正確|不正確)/g, '<strong class="evaluation-result $1">評估結果: $1</strong>')
+        .replace(/詳細分析:/g, '<strong class="evaluation-section">詳細分析:</strong>')
+        .replace(/改進建議:/g, '<strong class="evaluation-section">改進建議:</strong>');
+    
+    return formattedResult + formattedEvaluation;
 }
 
 // 玩家攻擊
