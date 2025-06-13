@@ -27,9 +27,6 @@ $current_level = $_SESSION['level'];
     <link rel="stylesheet" href="../../assets/css/quest.css">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
-
-
-
 </head>
 
 <body>
@@ -79,54 +76,62 @@ $current_level = $_SESSION['level'];
                             <p>探索充滿謎題與挑戰的程式迷宮，解開謎題、擊敗怪物、獲取寶藏！每個迷宮都有不同的難度和主題，挑戰自我，提升你的 Python 程式設計能力！</p>
                         </div>
 
-                        <div class="maze-levels row">
-                            <div class="maze-level <?php echo $current_level < 2 ? 'locked' : ''; ?>" onclick="randomMaze(1, this)">
-                                <div class="maze-pattern"></div>
-                                <?php if ($current_level < 2): ?>
-                                    <div class="level-lock"><i class="fas fa-lock"></i></div>
-                                    <div class="level-required">需要等級 2</div>
-                                <?php endif; ?>
-                                <div class="level-number">1</div>
-                                <div class="level-label">基礎迷宮</div>
+                        <div class="row  maze-levels">
+                            <div class="col-4">
+                                <div class="maze-level <?php echo $current_level < 2 ? 'locked' : ''; ?>" onclick="randomMaze(1, this)">
+                                    <div class="maze-pattern"></div>
+                                    <?php if ($current_level < 2): ?>
+                                        <div class="level-lock"><i class="fas fa-lock"></i></div>
+                                        <div class="level-required">需要等級 2</div>
+                                    <?php endif; ?>
+                                    <div class="level-number">1</div>
+                                    <div class="level-label">基礎迷宮</div>
+                                </div>
                             </div>
 
-                            <div class="maze-level <?php echo $current_level < 4 ? 'locked' : ''; ?>" onclick="randomMaze(2, this)">
-                                <div class="maze-pattern"></div>
-                                <?php if ($current_level < 4): ?>
+                            <div class="col">
+                                <div class="maze-level <?php echo $current_level < 4 ? 'locked' : ''; ?>" onclick="randomMaze(2, this)">
+                                    <div class="maze-pattern"></div>
+                                    <?php if ($current_level < 4): ?>
+                                        <div class="level-lock"><i class="fas fa-lock"></i></div>
+                                        <div class="level-required">需要等級 4</div>
+                                    <?php endif; ?>
+                                    <div class="level-number">2</div>
+                                    <div class="level-label">函數迷宮</div>
+                                </div>
+                            </div>
+                            <div class="col">
+                                <div class="maze-level <?php echo $current_level < 6 ? 'locked' : ''; ?>" onclick="randomMaze(3, this)">
+                                    <div class="maze-pattern"></div>
+                                    <?php if ($current_level < 6): ?>
+                                        <div class="level-lock"><i class="fas fa-lock"></i></div>
+                                        <div class="level-required">需要等級 6</div>
+                                    <?php endif; ?>
+                                    <div class="level-number">3</div>
+                                    <div class="level-label">數據迷宮</div>
+                                </div>
+                            </div>
+                            <div class="col">
+                                <div class="maze-level <?php echo $current_level < 8 ? 'locked' : ''; ?>" onclick="randomMaze(4, this)">
+                                    <div class="maze-pattern"></div>
+                                    <?php if ($current_level < 8): ?>
+                                        <div class="level-lock"><i class="fas fa-lock"></i></div>
+                                        <div class="level-required">需要等級 8</div>
+                                    <?php endif; ?>
+                                    <div class="level-number">4</div>
+                                    <div class="level-label">檔案迷宮</div>
+                                </div>
+                            </div>
+                            <div class="col">
+                                <div class="maze-level locked" onclick="randomMaze(5, this)">
+                                    <div class="maze-pattern"></div>
                                     <div class="level-lock"><i class="fas fa-lock"></i></div>
-                                    <div class="level-required">需要等級 4</div>
-                                <?php endif; ?>
-                                <div class="level-number">2</div>
-                                <div class="level-label">函數迷宮</div>
+                                    <div class="level-required">敬請期待</div>
+                                    <div class="level-number">5</div>
+                                    <div class="level-label">進階迷宮</div>
+                                </div>
                             </div>
 
-                            <div class="maze-level <?php echo $current_level < 6 ? 'locked' : ''; ?>" onclick="randomMaze(3, this)">
-                                <div class="maze-pattern"></div>
-                                <?php if ($current_level < 6): ?>
-                                    <div class="level-lock"><i class="fas fa-lock"></i></div>
-                                    <div class="level-required">需要等級 6</div>
-                                <?php endif; ?>
-                                <div class="level-number">3</div>
-                                <div class="level-label">數據迷宮</div>
-                            </div>
-
-                            <div class="maze-level <?php echo $current_level < 8 ? 'locked' : ''; ?>" onclick="randomMaze(4, this)">
-                                <div class="maze-pattern"></div>
-                                <?php if ($current_level < 8): ?>
-                                    <div class="level-lock"><i class="fas fa-lock"></i></div>
-                                    <div class="level-required">需要等級 8</div>
-                                <?php endif; ?>
-                                <div class="level-number">4</div>
-                                <div class="level-label">檔案迷宮</div>
-                            </div>
-
-                            <div class="maze-level locked" onclick="randomMaze(5, this)">
-                                <div class="maze-pattern"></div>
-                                <div class="level-lock"><i class="fas fa-lock"></i></div>
-                                <div class="level-required">敬請期待</div>
-                                <div class="level-number">5</div>
-                                <div class="level-label">進階迷宮</div>
-                            </div>
                         </div>
                     </div>
 
@@ -162,8 +167,10 @@ $current_level = $_SESSION['level'];
         </div>
     </div>
 
-    <script src="assets/js/quest.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="assets/js/quest.js">
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js">
+    </script>
     <script>
         function randomMaze(level, el) {
             // 若有 locked class，則不執行並提示
