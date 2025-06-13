@@ -242,19 +242,18 @@ function submitCode() {
     outputDisplay.classList.remove('error');
     updateBattleMessage('正在檢查您的答案...');
     
-    // 添加除錯訊息
-    console.log("提交答案:", {
+    // 添加除錯資訊
+    console.log('提交答案:', {
         levelId: levelData.levelId,
-        userCode: code.substring(0, 50) + "...", // 只顯示前50字元
         threadId: currentThreadId,
-        problemStatementLength: currentProblem.length
+        codePreview: code.substring(0, 50) + (code.length > 50 ? '...' : '')
     });
     
     // 發送代碼到後端進行評估
     fetch('api/evaluate-answer.php', {
         method: 'POST',
         headers: {
-            'Content-Type': 'application/json; charset=UTF-8', // 明確指定 UTF-8 編碼
+            'Content-Type': 'application/json; charset=UTF-8',
             'X-Requested-With': 'XMLHttpRequest'
         },
         body: JSON.stringify({
@@ -265,26 +264,33 @@ function submitCode() {
         })
     })
     .then(response => {
+        console.log('評估回應狀態:', response.status);
+        
+        if (!response.ok) {
+            throw new Error('網絡回應不正常: ' + response.status);
+        }
+        
         // 檢查回應編碼
         const contentType = response.headers.get('content-type');
-        if (contentType && contentType.includes('application/json')) {
-            return response.json();
+        if (!contentType || !contentType.includes('application/json')) {
+            throw new Error(`回應格式不正確: ${contentType}`);
         }
-        throw new Error(`回應格式不正確: ${contentType}`);
+        
+        return response.json();
     })
     .then(data => {
         // 恢復提交按鈕
         submitButton.disabled = false;
         submitButton.textContent = '提交答案';
         
-        console.log("API回應數據:", data);
+        console.log('評估回應數據:', data);
         
         if (data.success) {
             // 處理評估結果
             const isCorrect = data.isCorrect;
-            const evaluationText = data.evaluation;
+            const evaluationText = data.evaluation || '';
             
-            console.log("答案正確?", isCorrect, "評估文本長度:", evaluationText?.length);
+            console.log('答案是否正確:', isCorrect);
             
             // 顯示回饋 - 將評估結果格式化後顯示
             outputDisplay.innerHTML = formatEvaluationResult(evaluationText, isCorrect);
@@ -292,91 +298,106 @@ function submitCode() {
             // 根據結果執行戰鬥邏輯
             if (isCorrect) {
                 outputDisplay.classList.remove('error');
-                playerAttack();
+                try {
+                    playerAttack();  // 執行玩家攻擊
+                    console.log('玩家攻擊成功執行');
+                } catch(e) {
+                    console.error('執行玩家攻擊時發生錯誤:', e);
+                    updateBattleMessage('回應處理過程中發生錯誤，但答案是正確的！');
+                }
             } else {
                 outputDisplay.classList.add('error');
-                monsterAttack();
+                try {
+                    monsterAttack();  // 執行怪物攻擊
+                    console.log('怪物攻擊成功執行');
+                } catch(e) {
+                    console.error('執行怪物攻擊時發生錯誤:', e);
+                    updateBattleMessage('回應處理過程中發生錯誤，請檢查您的答案並再試一次。');
+                }
             }
         } else {
-            console.error("API錯誤:", data.message);
-            outputDisplay.innerHTML = `驗證失敗: ${data.message}`;
+            outputDisplay.innerHTML = `驗證失敗: ${data.message || '未知錯誤'}`;
             outputDisplay.classList.add('error');
+            updateBattleMessage('無法驗證您的答案，請稍後再試。');
         }
     })
     .catch(error => {
-        console.error('Error:', error);
-        outputDisplay.innerHTML = '驗證期間發生錯誤，可能是中文編碼問題。詳細錯誤: ' + error.message;
-        outputDisplay.classList.add('error');
-        
         // 恢復提交按鈕
         submitButton.disabled = false;
         submitButton.textContent = '提交答案';
+        
+        console.error('提交答案錯誤:', error);
+        outputDisplay.innerHTML = '驗證期間發生錯誤，請稍後再試。<br>詳細錯誤: ' + error.message;
+        outputDisplay.classList.add('error');
+        updateBattleMessage('發生錯誤，請稍後再試。');
     });
 }
 
-// 修正格式化評估結果函數 (如果有問題)
+// 改進評估結果格式化函數
 function formatEvaluationResult(evaluation, isCorrect) {
-    if (!evaluation) {
-        return `<strong>${isCorrect ? '恭喜，答案正確！' : '答案不正確'}</strong><br>但評估內容為空`;
+    if (!evaluation || evaluation.trim() === '') {
+        return `<div class="evaluation-header ${isCorrect ? 'correct' : 'incorrect'}">
+            <h3>${isCorrect ? '恭喜，答案正確！' : '答案不正確'}</h3>
+            <p>${isCorrect ? '您成功解決了這個問題！' : '請檢查您的答案並再試一次。'}</p>
+        </div>`;
     }
     
     // 先創建基本標題
-    let formattedResult = `<strong>${isCorrect ? '恭喜，答案正確！' : '答案不正確'}</strong><br><br>`;
+    let formattedResult = `<div class="evaluation-header ${isCorrect ? 'correct' : 'incorrect'}">
+        <h3>${isCorrect ? '恭喜，答案正確！' : '答案不正確'}</h3>
+    </div>`;
     
     // 將評估內容格式化
-    const formattedEvaluation = evaluation
+    let formattedEvaluation = evaluation
         .replace(/\n/g, '<br>')
         .replace(/```python([\s\S]*?)```/g, '<pre class="code-block"><code>$1</code></pre>')
         .replace(/評估結果: (正確|不正確)/g, '<strong class="evaluation-result $1">評估結果: $1</strong>')
+        .replace(/評估結果：(正確|不正確)/g, '<strong class="evaluation-result $1">評估結果：$1</strong>')
         .replace(/詳細分析:/g, '<strong class="evaluation-section">詳細分析:</strong>')
-        .replace(/改進建議:/g, '<strong class="evaluation-section">改進建議:</strong>');
+        .replace(/詳細分析：/g, '<strong class="evaluation-section">詳細分析：</strong>')
+        .replace(/改進建議:/g, '<strong class="evaluation-section">改進建議:</strong>')
+        .replace(/改進建議：/g, '<strong class="evaluation-section">改進建議：</strong>');
     
-    return formattedResult + formattedEvaluation;
+    return formattedResult + '<div class="evaluation-content">' + formattedEvaluation + '</div>';
 }
 
-// 玩家攻擊
+// 玩家攻擊函數
 function playerAttack() {
-    if (battleState.isBattleOver) return;
+    // 防止重複觸發
+    if (!battleState.isPlayerTurn || battleState.isBattleOver) {
+        console.warn('非玩家回合或戰鬥已結束');
+        return;
+    }
     
-    // 計算傷害
-    const damage = Math.floor(levelData.playerAttack * (0.8 + Math.random() * 0.4));
-    
-    // 怪物受到傷害
-    battleState.monsterHp -= damage;
-    
-    // 確保生命值不會小於0
-    if (battleState.monsterHp < 0) battleState.monsterHp = 0;
-    
-    // 更新怪物生命條
-    updateMonsterHp();
-    
-    // 顯示攻擊效果
-    showAttackEffect('monster1', damage);
-    
-    // 顯示戰鬥消息
-    updateBattleMessage(`您的代碼擊中怪物，造成 ${damage} 點傷害！`);
-    
-    // 檢查戰鬥是否結束
-    setTimeout(() => {
+    try {
+        console.log('玩家攻擊開始，目前狀態:', JSON.stringify(battleState));
+        
+        // 計算傷害
+        const damage = calculateDamage(levelData.playerAttackPower || 10);
+        battleState.monsterHp -= damage;
+        
+        // 更新UI
+        updateBattleMessage(`你的答案正確！對怪物造成了 ${damage} 點傷害！`);
+        updateHealthBars();
+        
+        // 檢查怪物是否被擊敗
         if (battleState.monsterHp <= 0) {
-            // 如果還有下一波
+            // 檢查是否還有下一波
             if (battleState.wave < battleState.maxWaves) {
-                battleState.wave++;
-                battleState.monsterHp = levelData.monsterHp;
-                updateMonsterHp();
-                updateBattleMessage(`第 ${battleState.wave}/${battleState.maxWaves} 波怪物出現了！`);
+                nextWave();
             } else {
-                // 戰鬥勝利
-                battleState.isBattleOver = true;
-                battleState.hasWon = true;
-                updateBattleMessage('戰鬥勝利！您成功完成了這個關卡！');
-                showResultModal(true);
+                endBattle(true); // 玩家勝利
             }
         } else {
-            // 輪到怪物攻擊
-            setTimeout(monsterAttack, 1000);
+            // 切換回合
+            battleState.isPlayerTurn = false;
+            setTimeout(monsterAttack, 1500); // 1.5秒後怪物反擊
         }
-    }, 1000);
+        
+        console.log('玩家攻擊結束，更新後狀態:', JSON.stringify(battleState));
+    } catch (e) {
+        console.error('玩家攻擊函數出錯:', e);
+    }
 }
 
 // 怪物攻擊

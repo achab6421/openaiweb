@@ -95,7 +95,13 @@ if (!$evaluation) {
 // 如果用戶程式碼通過測試，更新數據庫中的進度
 $isCorrect = checkIfCorrect($evaluation);
 if ($isCorrect) {
-    updateUserProgress($db, $levelId, $_SESSION['user_id']);
+    try {
+        updateUserProgress($db, $levelId, $_SESSION['user_id']);
+    } catch (PDOException $e) {
+        // 捕獲資料庫錯誤但不中斷流程
+        error_log("資料庫更新進度錯誤: " . $e->getMessage());
+        // 繼續處理，不讓資料庫錯誤影響評估結果的返回
+    }
 }
 
 // 返回評估結果
@@ -103,7 +109,7 @@ echo json_encode([
     'success' => true,
     'evaluation' => $evaluation,
     'isCorrect' => $isCorrect
-]);
+], JSON_UNESCAPED_UNICODE);
 exit;
 
 // 以下是輔助函數
@@ -142,10 +148,10 @@ function addEvaluationMessage($apiKey, $threadId, $problemStatement, $userCode) 
         CURLOPT_POSTFIELDS => json_encode([
             "role" => "user",
             "content" => $content
-        ], JSON_UNESCAPED_UNICODE), // 確保 JSON 編碼時保留 Unicode 字符
+        ], JSON_UNESCAPED_UNICODE), // 確保中文字符正確編碼
         CURLOPT_HTTPHEADER => [
             "Authorization: Bearer " . $apiKey,
-            "Content-Type: application/json; charset=utf-8", // 指定 UTF-8 編碼
+            "Content-Type: application/json; charset=utf-8", // 指定UTF-8編碼
             "OpenAI-Beta: assistants=v2"
         ],
     ]);
@@ -280,25 +286,74 @@ function getAssistantResponse($apiKey, $threadId) {
 }
 
 function checkIfCorrect($evaluation) {
-    // 檢查評估結果是否包含"評估結果: 正確"
-    return (strpos($evaluation, '評估結果: 正確') !== false);
+    // 檢查評估結果是否包含"評估結果: 正確"，注意可能有不同版本的空格和標點
+    $patterns = [
+        '評估結果: 正確',
+        '評估結果：正確',
+        '評估結果:正確',
+        '評估結果：正確',
+        '正確的答案',
+        '答案正確',
+        '答案是正確的'
+    ];
+    
+    foreach ($patterns as $pattern) {
+        if (mb_strpos($evaluation, $pattern) !== false) {
+            return true;
+        }
+    }
+    
+    return false;
 }
 
 function updateUserProgress($db, $levelId, $userId) {
-    // 檢查用戶是否已經完成此關卡
-    $checkQuery = "SELECT * FROM user_progress WHERE user_id = ? AND level_id = ?";
-    $checkStmt = $db->prepare($checkQuery);
-    $checkStmt->bindParam(1, $userId);
-    $checkStmt->bindParam(2, $levelId);
-    $checkStmt->execute();
-    
-    // 如果未完成，則記錄完成狀態
-    if ($checkStmt->rowCount() == 0) {
-        $insertQuery = "INSERT INTO user_progress (user_id, level_id, completed_at) VALUES (?, ?, NOW())";
-        $insertStmt = $db->prepare($insertQuery);
-        $insertStmt->bindParam(1, $userId);
-        $insertStmt->bindParam(2, $levelId);
-        $insertStmt->execute();
+    try {
+        // 檢查表格是否存在
+        $tableExists = false;
+        try {
+            $checkTable = $db->query("SHOW TABLES LIKE 'user_progress'");
+            $tableExists = ($checkTable->rowCount() > 0);
+        } catch (PDOException $e) {
+            // 表格檢查失敗，假設表格不存在
+            $tableExists = false;
+        }
+        
+        // 如果表格不存在，創建它
+        if (!$tableExists) {
+            $createTableSQL = "CREATE TABLE IF NOT EXISTS `user_progress` (
+                `id` int(11) NOT NULL AUTO_INCREMENT,
+                `user_id` varchar(50) NOT NULL,
+                `level_id` int(11) NOT NULL,
+                `completed_at` datetime NOT NULL,
+                PRIMARY KEY (`id`),
+                UNIQUE KEY `user_level_idx` (`user_id`,`level_id`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;";
+            
+            $db->exec($createTableSQL);
+            error_log("自動創建 user_progress 表格");
+        }
+        
+        // 正常的進度更新流程
+        $checkQuery = "SELECT * FROM user_progress WHERE user_id = ? AND level_id = ?";
+        $checkStmt = $db->prepare($checkQuery);
+        $checkStmt->bindParam(1, $userId);
+        $checkStmt->bindParam(2, $levelId);
+        $checkStmt->execute();
+        
+        // 如果未完成，則記錄完成狀態
+        if ($checkStmt->rowCount() == 0) {
+            $insertQuery = "INSERT INTO user_progress (user_id, level_id, completed_at) VALUES (?, ?, NOW())";
+            $insertStmt = $db->prepare($insertQuery);
+            $insertStmt->bindParam(1, $userId);
+            $insertStmt->bindParam(2, $levelId);
+            $insertStmt->execute();
+        }
+        
+        return true;
+    } catch (PDOException $e) {
+        error_log("無法更新用戶進度: " . $e->getMessage());
+        // 在測試環境中，我們可以允許這個錯誤
+        return false;
     }
 }
 
