@@ -340,9 +340,9 @@ function playerAttack() {
             return;
         }
         
-        // 計算傷害 - 使用玩家攻擊力
-        const playerAttackPower = parseInt(levelData.playerAttackPower) || 10;
-        const damage = calculateDamage(playerAttackPower);
+        // 使用 playerAttack 而非 playerAttackPower (修正這裡)
+        const playerAttack = parseInt(levelData.playerAttack) || 10;
+        const damage = calculateDamage(playerAttack);
         battleState.monsterHp -= damage;
         console.log(`玩家攻擊！造成 ${damage} 點傷害，怪物剩餘血量: ${battleState.monsterHp}`);
         
@@ -350,12 +350,8 @@ function playerAttack() {
         showAttackEffect('monster', damage);
         
         // 更新UI
-        try {
-            updateBattleMessage(`你的答案正確！對怪物造成了 ${damage} 點傷害！`);
-            updateMonsterHp();
-        } catch (uiError) {
-            console.warn('更新UI時發生錯誤:', uiError);
-        }
+        updateMonsterHp();
+        updateBattleMessage(`你的答案正確！對怪物造成了 ${damage} 點傷害！`);
         
         // 檢查怪物是否死亡
         if (battleState.monsterHp <= 0) {
@@ -387,9 +383,9 @@ function monsterAttack() {
             return;
         }
         
-        // 計算傷害 - 使用怪物攻擊力
-        const monsterAttackPower = parseInt(levelData.monsterAttackPower) || 5;
-        const damage = calculateDamage(monsterAttackPower);
+        // 使用正確的怪物攻擊力參數
+        const monsterAttack = parseInt(levelData.monsterAttack) || 5;
+        const damage = calculateDamage(monsterAttack);
         battleState.playerHp -= damage;
         console.log(`怪物攻擊！造成 ${damage} 點傷害，玩家剩餘血量: ${battleState.playerHp}`);
         
@@ -397,12 +393,8 @@ function monsterAttack() {
         showAttackEffect('player', damage);
         
         // 更新UI
-        try {
-            updateBattleMessage(`怪物攻擊了你，造成 ${damage} 點傷害！`);
-            updatePlayerHp();
-        } catch (uiError) {
-            console.warn('更新UI時發生錯誤:', uiError);
-        }
+        updatePlayerHp();
+        updateBattleMessage(`怪物攻擊了你，造成 ${damage} 點傷害！`);
         
         // 檢查玩家是否死亡
         if (battleState.playerHp <= 0) {
@@ -488,67 +480,62 @@ function resetBattle() {
     }
 }
 
-// 更新玩家生命值顯示
+// 更新玩家生命值顯示 - 適應當前頁面結構
 function updatePlayerHp() {
-    const playerHpElement = document.getElementById('player-hp') || 
-        document.getElementById('player-hp-text');
+    console.log('更新玩家HP:', battleState.playerHp);
     
-    if (!playerHpElement) {
-        console.warn('找不到玩家生命值顯示元素');
-        return;
+    // 根據 level.php 的結構精確定位元素
+    const playerHpElement = document.querySelector('.character-stats .hp-value');
+    if (playerHpElement) {
+        playerHpElement.textContent = battleState.playerHp;
+        console.log('成功更新玩家HP顯示元素');
+    } else {
+        console.warn('找不到玩家HP顯示元素 (.character-stats .hp-value)');
     }
     
-    const playerMaxHp = parseInt(levelData.playerHp) || 100;
-    const currentHp = Math.max(0, battleState.playerHp);
-    
-    playerHpElement.textContent = `${currentHp}/${playerMaxHp}`;
-    
-    // 更新生命值百分比
-    const percent = (currentHp / playerMaxHp) * 100;
-    const playerHpBar = document.getElementById('player-hp-bar');
+    // 可選：如果有玩家血條，也可以更新
+    const playerHpBar = document.querySelector('.character-stats .hp-bar');
     if (playerHpBar) {
-        playerHpBar.style.width = `${percent}%`;
+        const playerMaxHp = parseInt(levelData.playerHp) || 100;
+        const currentHp = Math.max(0, battleState.playerHp);
+        const percent = (currentHp / playerMaxHp) * 100;
         
-        // 根據血量百分比更改顏色
-        if (percent <= 20) {
-            playerHpBar.style.backgroundColor = '#ff4444'; // 紅色
-        } else if (percent <= 50) {
-            playerHpBar.style.backgroundColor = '#ffaa33'; // 橙色
-        } else {
-            playerHpBar.style.backgroundColor = '#44cc44'; // 綠色
-        }
+        playerHpBar.style.width = `${percent}%`;
+        console.log('成功更新玩家HP條');
     }
 }
 
-// 添加 monsterHp 更新函數的完整定義
+// 更新怪物生命值顯示 - 適應特定HTML結構
 function updateMonsterHp() {
-    const monsterHpElement = document.getElementById('monster-hp') || 
-        document.getElementById('monster-hp-text');
+    console.log('更新怪物HP:', battleState.monsterHp);
     
-    if (!monsterHpElement) {
-        console.warn('找不到怪物生命值顯示元素');
-        return;
+    // 根據 level.php 的結構精確定位元素
+    const monsterHpElement = document.querySelector('.monster-hp .current-hp');
+    if (monsterHpElement) {
+        monsterHpElement.textContent = battleState.monsterHp;
+        console.log('成功更新怪物HP顯示元素');
+    } else {
+        console.warn('找不到怪物HP顯示元素 (.monster-hp .current-hp)');
     }
     
-    const monsterMaxHp = parseInt(levelData.monsterHp) || 100;
-    const currentHp = Math.max(0, battleState.monsterHp);
-    
-    monsterHpElement.textContent = `${currentHp}/${monsterMaxHp}`;
-    
-    // 更新生命值百分比
-    const percent = (currentHp / monsterMaxHp) * 100;
-    const monsterHpBar = document.getElementById('monster-hp-bar');
+    // 更新怪物血條
+    const monsterHpBar = document.querySelector('.monster-hp .hp-bar .hp-fill');
     if (monsterHpBar) {
+        const monsterMaxHp = parseInt(levelData.monsterHp) || 100;
+        const currentHp = Math.max(0, battleState.monsterHp);
+        const percent = (currentHp / monsterMaxHp) * 100;
+        
         monsterHpBar.style.width = `${percent}%`;
+        console.log('成功更新怪物HP條:', `${percent}%`);
         
         // 根據血量百分比更改顏色
         if (percent <= 20) {
             monsterHpBar.style.backgroundColor = '#ff4444'; // 紅色
         } else if (percent <= 50) {
             monsterHpBar.style.backgroundColor = '#ffaa33'; // 橙色
-        } else {
-            monsterHpBar.style.backgroundColor = '#cc4444'; // 暗紅色
         }
+    } else {
+        console.warn('找不到怪物HP條元素 (.monster-hp .hp-bar .hp-fill)');
     }
 }
 
