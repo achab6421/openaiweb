@@ -385,42 +385,62 @@ function addExperienceAndCheckLevelUp($db, $userId, $expAmount) {
     $currentExp = intval($player['experience'] ?? 0);
     $newExp = $currentExp + $expAmount;
     
-    // 查詢下一級所需經驗值
-    $nextLevelQuery = "SELECT required_exp, level_attribute_bonus, description FROM player_level_experience 
-                       WHERE level = ? + 1";
-    $nextLevelStmt = $db->prepare($nextLevelQuery);
-    $nextLevelStmt->execute([$currentLevel]);
-    $nextLevelData = $nextLevelStmt->fetch(PDO::FETCH_ASSOC);
-    
-    // 如果找不到下一級數據，使用預設公式計算
-    if (!$nextLevelData) {
-        $expToNextLevel = $currentLevel * 100;  // 預設公式
-        $levelAttributeBonus = 1.05;  // 預設屬性提升5%
-        $newLevelDescription = null;
-    } else {
-        $expToNextLevel = $nextLevelData['required_exp'];
-        $levelAttributeBonus = $nextLevelData['level_attribute_bonus'];
-        $newLevelDescription = $nextLevelData['description'];
-    }
-    
-    // 檢查是否需要升級
+    // 升級邏輯變數
     $levelUp = false;
     $newLevel = $currentLevel;
     $levelsGained = 0;
+    $finalExp = $newExp; // 預設為加上經驗值後的數值
     
-    // 如果經驗值足夠，升級玩家
-    if ($newExp >= $expToNextLevel) {
-        // 進行升級
-        $newLevel = $currentLevel + 1;
-        $levelsGained = 1;
-        $levelUp = true;
+    // 檢查是否需要升級 - 可能會連續升多級
+    while (true) {
+        // 查詢當前等級所需的下一級經驗值
+        $nextLevelQuery = "SELECT required_exp, level_attribute_bonus, description FROM player_level_experience 
+                           WHERE level = ? + 1";
+        $nextLevelStmt = $db->prepare($nextLevelQuery);
+        $nextLevelStmt->execute([$newLevel]);
+        $nextLevelData = $nextLevelStmt->fetch(PDO::FETCH_ASSOC);
         
-        // 計算新的攻擊力和HP
-        $newAttackPower = ceil($player['attack_power'] * $levelAttributeBonus);
-        $newBaseHp = ceil($player['base_hp'] * $levelAttributeBonus);
+        // 如果找不到下一級數據，使用預設公式計算
+        if (!$nextLevelData) {
+            $expToNextLevel = $newLevel * 100;  // 預設公式
+            $levelAttributeBonus = 1.05;  // 預設屬性提升5%
+            $newLevelDescription = null;
+        } else {
+            $expToNextLevel = $nextLevelData['required_exp'];
+            $levelAttributeBonus = $nextLevelData['level_attribute_bonus'];
+            $newLevelDescription = $nextLevelData['description'];
+        }
         
-        // 更新玩家數據
+        // 計算溢出的經驗值
+        if ($finalExp >= $expToNextLevel) {
+            // 升級！
+            $newLevel++;
+            $levelsGained++;
+            $levelUp = true;
+            
+            // 扣除升級所需經驗值，剩餘的作為新等級的經驗值
+            $finalExp -= $expToNextLevel;
+            
+            // 計算新的攻擊力和HP
+            if ($newLevel == $currentLevel + 1) { // 首次升級時更新屬性
+                $newAttackPower = ceil($player['attack_power'] * $levelAttributeBonus);
+                $newBaseHp = ceil($player['base_hp'] * $levelAttributeBonus);
+            } else { // 連續升級時繼續提升
+                $newAttackPower = ceil($newAttackPower * $levelAttributeBonus);
+                $newBaseHp = ceil($newBaseHp * $levelAttributeBonus);
+            }
+            
+            // 繼續檢查是否可以再次升級
+        } else {
+            // 不能再升級了，跳出循環
+            break;
+        }
+    }
+    
+    // 更新資料庫中的玩家數據
+    if ($levelUp) {
         try {
+            // 更新玩家等級、經驗值、攻擊力和HP
             $updatePlayerQuery = "UPDATE players SET 
                 level = ?, 
                 experience = ?, 
@@ -430,7 +450,7 @@ function addExperienceAndCheckLevelUp($db, $userId, $expAmount) {
             $updatePlayerStmt = $db->prepare($updatePlayerQuery);
             $updatePlayerStmt->execute([
                 $newLevel,
-                $newExp,  // 保留溢出的經驗值，不再減去所需經驗值
+                $finalExp, // 使用扣除後的剩餘經驗值
                 $newAttackPower,
                 $newBaseHp,
                 $userId
@@ -450,7 +470,7 @@ function addExperienceAndCheckLevelUp($db, $userId, $expAmount) {
         try {
             $updateExpQuery = "UPDATE players SET experience = ? WHERE player_id = ?";
             $updateExpStmt = $db->prepare($updateExpQuery);
-            $updateExpStmt->execute([$newExp, $userId]);
+            $updateExpStmt->execute([$newExp, $userId]); // 使用新經驗值
         } catch (PDOException $e) {
             error_log("Error updating experience: " . $e->getMessage());
             throw $e;
@@ -458,7 +478,7 @@ function addExperienceAndCheckLevelUp($db, $userId, $expAmount) {
     }
     
     // 查詢下一級所需經驗值 (可能是剛升級的新級別的下一級)
-    $nextLevelQuery = "SELECT required_exp FROM player_level_experience 
+    $nextLevelQuery = "SELECT required_exp, description FROM player_level_experience 
                       WHERE level = ? + 1";
     $nextLevelStmt = $db->prepare($nextLevelQuery);
     $nextLevelStmt->execute([$newLevel]);
@@ -466,16 +486,18 @@ function addExperienceAndCheckLevelUp($db, $userId, $expAmount) {
     
     // 如果找不到下一級數據，使用預設公式
     $nextRequiredExp = $nextLevelData ? $nextLevelData['required_exp'] : ($newLevel * 100);
+    $nextLevelTitle = $nextLevelData ? $nextLevelData['description'] : null;
     
     // 返回升級信息
     return [
         'levelUp' => $levelUp,
         'newLevel' => $newLevel,
         'levelsGained' => $levelsGained,
-        'currentExp' => $newExp,
+        'currentExp' => $finalExp, // 使用最終經驗值
         'expToNextLevel' => $nextRequiredExp,
         'expGained' => $expAmount,
-        'newLevelTitle' => $newLevelDescription ?? ('等級 ' . $newLevel)
+        'newLevelTitle' => $newLevelDescription ?? ('等級 ' . $newLevel),
+        'nextLevelTitle' => $nextLevelTitle ?? ('等級 ' . ($newLevel + 1))
     ];
 }
 ?>

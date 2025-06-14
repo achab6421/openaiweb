@@ -20,6 +20,7 @@ $chapter_id = intval($_GET['id']);
 // 包含資料庫連接檔案
 include_once 'config/database.php';
 
+// 在 try 內獲取經驗值數據，與其他數據庫查詢一起添加
 try {
     $database = new Database();
     $db = $database->getConnection();
@@ -107,6 +108,41 @@ try {
             }
         }
     }
+    
+    // 添加：獲取經驗值信息
+    $currentExp = 0;
+    $expToNextLevel = 0;
+    $expPercentage = 0;
+    
+    // 檢查 experience 列是否存在
+    $checkColumnQuery = "SHOW COLUMNS FROM players LIKE 'experience'";
+    $checkColumnStmt = $db->query($checkColumnQuery);
+    if ($checkColumnStmt && $checkColumnStmt->rowCount() > 0) {
+        // 獲取當前經驗值
+        $expQuery = "SELECT experience FROM players WHERE player_id = ?";
+        $expStmt = $db->prepare($expQuery);
+        $expStmt->execute([$_SESSION['user_id']]);
+        $expData = $expStmt->fetch(PDO::FETCH_ASSOC);
+        $currentExp = isset($expData['experience']) ? intval($expData['experience']) : 0;
+        
+        // 檢查 player_level_experience 表是否存在
+        $checkTableQuery = "SHOW TABLES LIKE 'player_level_experience'";
+        $checkTableStmt = $db->query($checkTableQuery);
+        if ($checkTableStmt && $checkTableStmt->rowCount() > 0) {
+            // 獲取升級所需經驗值
+            $nextLevelQuery = "SELECT required_exp FROM player_level_experience WHERE level = ? + 1";
+            $nextLevelStmt = $db->prepare($nextLevelQuery);
+            $nextLevelStmt->execute([$_SESSION['level']]);
+            $nextLevelData = $nextLevelStmt->fetch(PDO::FETCH_ASSOC);
+            $expToNextLevel = isset($nextLevelData['required_exp']) ? intval($nextLevelData['required_exp']) : (($_SESSION['level'] + 1) * 100);
+        } else {
+            // 表不存在，使用默認公式
+            $expToNextLevel = ($_SESSION['level'] + 1) * 100;
+        }
+        
+        // 計算進度百分比
+        $expPercentage = $expToNextLevel > 0 ? min(100, ($currentExp / $expToNextLevel) * 100) : 0;
+    }
 } catch (PDOException $e) {
     echo "資料庫錯誤：" . $e->getMessage();
     echo "<br><a href='dashboard.php'>返回主頁</a>";
@@ -126,6 +162,40 @@ try {
     <link rel="stylesheet" href="assets/css/quest.css">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    
+    <!-- 添加經驗條樣式 -->
+    <style>
+    .exp-progress {
+        margin-top: 10px;
+        width: 100%;
+    }
+    
+    .exp-bar-container {
+        height: 5px;
+        background-color: rgba(0, 0, 0, 0.3);
+        border-radius: 3px;
+        overflow: hidden;
+        margin: 4px 0;
+    }
+    
+    .exp-bar {
+        height: 100%;
+        background: linear-gradient(to right, #4caf50, #8bc34a);
+        width: 0%;
+        transition: width 0.8s ease;
+    }
+    
+    .exp-info {
+        display: flex;
+        justify-content: center;
+        font-size: 12px;
+    }
+    
+    .exp-values {
+        color: #ccc;
+        font-size: 11px;
+    }
+    </style>
 </head>
 <body>
     <div class="main-container quest-page">
@@ -146,6 +216,16 @@ try {
                     <div class="stat">
                         <span>血量</span>
                         <strong><?= $_SESSION['base_hp'] ?></strong>
+                    </div>
+                </div>
+                
+                <!-- 添加經驗值進度條 -->
+                <div class="exp-progress">
+                    <div class="exp-bar-container">
+                        <div class="exp-bar" style="width: <?php echo $expPercentage; ?>%"></div>
+                    </div>
+                    <div class="exp-info">
+                        <span class="exp-values"><?php echo $currentExp; ?>/<?php echo $expToNextLevel; ?></span>
                     </div>
                 </div>
             </div>
@@ -340,6 +420,22 @@ try {
     </div>
 
     <script src="assets/js/quest.js"></script>
+    
+    <!-- 添加經驗條動畫腳本 -->
+    <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // 經驗值進度條動畫
+        const expBar = document.querySelector('.exp-bar');
+        if (expBar) {
+            const targetWidth = expBar.style.width;
+            expBar.style.width = '0%';
+            
+            setTimeout(() => {
+                expBar.style.width = targetWidth;
+            }, 300);
+        }
+    });
+    </script>
 </body>
 </html>
 
