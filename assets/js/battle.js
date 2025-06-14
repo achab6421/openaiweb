@@ -568,70 +568,218 @@ function showNextWaveEffect() {
     }, 2000);
 }
 
-// 結束戰鬥
-function endBattle(isVictory) {
-    battleState.isBattleOver = true;
-    battleState.hasWon = isVictory;
-    
-    if (isVictory) {
-        updateBattleMessage('恭喜！你擊敗了所有怪物，完成了這個關卡！');
+// 修復 showVictoryEffect 函數，增加錯誤處理
+function showVictoryEffect() {
+    try {
+        console.log('顯示勝利效果');
         
-        // 顯示勝利效果
-        showVictoryEffect();
+        // 尋找適合的容器元素
+        let battleContainer = document.getElementById('battle-container');
         
-        // 記錄關卡完成並解鎖下一關
-        recordLevelCompletion();
+        // 如果找不到特定的容器，尋找替代元素
+        if (!battleContainer) {
+            const possibleContainers = [
+                document.querySelector('.battle-container'),
+                document.querySelector('.battle-content'),
+                document.querySelector('.battle-scene'),
+                document.querySelector('.battle-section'),
+                document.body // 最後的備用選項
+            ];
+            
+            // 使用找到的第一個非空元素
+            for (const container of possibleContainers) {
+                if (container) {
+                    battleContainer = container;
+                    console.log('使用替代容器:', container.tagName, container.className || container.id);
+                    break;
+                }
+            }
+        }
         
-        // 顯示結果彈窗
-        showResultModal(true);
-    } else {
-        updateBattleMessage('你被怪物擊敗了！');
+        if (!battleContainer) {
+            console.warn('找不到可用容器來顯示勝利效果，將直接使用body');
+            battleContainer = document.body;
+        }
         
-        // 顯示失敗效果
-        showDefeatEffect();
+        // 創建勝利效果元素
+        const victoryEffect = document.createElement('div');
+        victoryEffect.className = 'victory-effect';
+        victoryEffect.style.position = 'fixed';
+        victoryEffect.style.top = '0';
+        victoryEffect.style.left = '0';
+        victoryEffect.style.width = '100%';
+        victoryEffect.style.height = '100%';
+        victoryEffect.style.backgroundColor = 'rgba(0, 150, 0, 0.3)';
+        victoryEffect.style.display = 'flex';
+        victoryEffect.style.justifyContent = 'center';
+        victoryEffect.style.alignItems = 'center';
+        victoryEffect.style.zIndex = '9999';
         
-        // 顯示結果彈窗
-        showResultModal(false);
+        const victoryText = document.createElement('span');
+        victoryText.textContent = 'Victory!';
+        victoryText.style.fontSize = '72px';
+        victoryText.style.color = '#ffcc00';
+        victoryText.style.textShadow = '2px 2px 4px #000';
+        victoryText.style.fontWeight = 'bold';
+        
+        // 安全地添加元素
+        victoryEffect.appendChild(victoryText);
+        battleContainer.appendChild(victoryEffect);
+        
+        // 播放勝利音效（如果有）
+        try {
+            playSound('victory');
+        } catch (soundError) {
+            console.log('無法播放勝利音效');
+        }
+        
+        // 3秒後移除效果
+        setTimeout(() => {
+            try {
+                if (victoryEffect.parentNode) {
+                    victoryEffect.parentNode.removeChild(victoryEffect);
+                }
+            } catch (removeError) {
+                console.warn('移除勝利效果時出錯', removeError);
+            }
+        }, 3000);
+    } catch (error) {
+        console.error('顯示勝利效果時出錯:', error);
+        // 即使出錯，也不影響遊戲流程
     }
 }
 
-// 顯示勝利效果
-function showVictoryEffect() {
-    const victoryEffect = document.createElement('div');
-    victoryEffect.className = 'victory-effect';
-    victoryEffect.innerHTML = '<span>Victory!</span>';
-    document.getElementById('battle-container').appendChild(victoryEffect);
-    
-    // 播放勝利音效
-    playSound('victory');
-    
-    // 3秒後移除效果
-    setTimeout(() => {
-        victoryEffect.remove();
-    }, 3000);
-}
-
-// 顯示失敗效果
+// 類似地修復 showDefeatEffect 函數，增加錯誤處理
 function showDefeatEffect() {
-    const defeatEffect = document.createElement('div');
-    defeatEffect.className = 'defeat-effect';
-    defeatEffect.innerHTML = '<span>Defeat!</span>';
-    document.getElementById('battle-container').appendChild(defeatEffect);
-    
-    // 播放失敗音效
-    playSound('defeat');
-    
-    // 3秒後移除效果
-    setTimeout(() => {
-        defeatEffect.remove();
-    }, 3000);
+    try {
+        console.log('顯示失敗效果');
+        
+        // 尋找適合的容器元素
+        let battleContainer = document.getElementById('battle-container');
+        
+        // 如果找不到特定的容器，尋找替代元素
+        if (!battleContainer) {
+            const possibleContainers = [
+                document.querySelector('.battle-container'),
+                document.querySelector('.battle-content'),
+                document.querySelector('.battle-scene'),
+                document.querySelector('.battle-section'),
+                document.body // 最後的備用選項
+            ];
+            
+            // 使用找到的第一個非空元素
+            for (const container of possibleContainers) {
+                if (container) {
+                    battleContainer = container;
+                    console.log('使用替代容器:', container.tagName, container.className || container.id);
+                    break;
+                }
+            }
+        }
+        
+        if (!battleContainer) {
+            console.warn('找不到可用容器來顯示失敗效果，將直接使用body');
+            battleContainer = document.body;
+        }
+        
+        // 創建失敗效果元素
+        const defeatEffect = document.createElement('div');
+        defeatEffect.className = 'defeat-effect';
+        defeatEffect.style.position = 'fixed';
+        defeatEffect.style.top = '0';
+        defeatEffect.style.left = '0';
+        defeatEffect.style.width = '100%';
+        defeatEffect.style.height = '100%';
+        defeatEffect.style.backgroundColor = 'rgba(150, 0, 0, 0.3)';
+        defeatEffect.style.display = 'flex';
+        defeatEffect.style.justifyContent = 'center';
+        defeatEffect.style.alignItems = 'center';
+        defeatEffect.style.zIndex = '9999';
+        
+        const defeatText = document.createElement('span');
+        defeatText.textContent = 'Defeat!';
+        defeatText.style.fontSize = '72px';
+        defeatText.style.color = '#ff3333';
+        defeatText.style.textShadow = '2px 2px 4px #000';
+        defeatText.style.fontWeight = 'bold';
+        
+        // 安全地添加元素
+        defeatEffect.appendChild(defeatText);
+        battleContainer.appendChild(defeatEffect);
+        
+        // 播放失敗音效
+        try {
+            playSound('defeat');
+        } catch (soundError) {
+            console.log('無法播放失敗音效');
+        }
+        
+        // 3秒後移除效果
+        setTimeout(() => {
+            try {
+                if (defeatEffect.parentNode) {
+                    defeatEffect.parentNode.removeChild(defeatEffect);
+                }
+            } catch (removeError) {
+                console.warn('移除失敗效果時出錯', removeError);
+            }
+        }, 3000);
+    } catch (error) {
+        console.error('顯示失敗效果時出錯:', error);
+        // 即使出錯，也不影響遊戲流程
+    }
 }
 
-// 播放音效
-function playSound(type) {
-    // 如果存在音效系統則使用，否則只記錄到控制台
-    console.log(`播放音效: ${type}`);
-    // 未來可以實現實際的音效播放功能
+// 修改 endBattle 函數，增加更多錯誤處理
+function endBattle(isVictory) {
+    try {
+        console.log(`戰鬥結束，結果: ${isVictory ? '勝利' : '失敗'}`);
+        
+        battleState.isBattleOver = true;
+        battleState.hasWon = isVictory;
+        
+        // 更新戰鬥訊息
+        updateBattleMessage(isVictory 
+            ? '恭喜！你擊敗了所有怪物，完成了這個關卡！' 
+            : '你被怪物擊敗了！');
+        
+        // 顯示效果
+        if (isVictory) {
+            // 顯示勝利效果 (有錯誤處理)
+            showVictoryEffect();
+            
+            // 記錄關卡完成並解鎖下一關
+            try {
+                recordLevelCompletion();
+            } catch (recordError) {
+                console.warn('記錄關卡完成時出錯:', recordError);
+            }
+        } else {
+            // 顯示失敗效果 (有錯誤處理)
+            showDefeatEffect();
+        }
+        
+        // 顯示結果彈窗
+        try {
+            showResultModal(isVictory);
+        } catch (modalError) {
+            console.warn('顯示結果彈窗時出錯:', modalError);
+            
+            // 如果無法顯示模態窗口，至少顯示重試按鈕
+            const retryButton = document.getElementById('retry-button');
+            if (retryButton) {
+                retryButton.style.display = 'inline-block';
+            }
+        }
+        
+        // 禁用提交按鈕
+        const submitButton = document.getElementById('submit-code');
+        if (submitButton) {
+            submitButton.disabled = true;
+        }
+    } catch (error) {
+        console.error('結束戰鬥過程中發生錯誤:', error);
+    }
 }
 
 // 修改 showAttackEffect 函數來適應不同的 HTML 結構
