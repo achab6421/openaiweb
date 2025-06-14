@@ -788,7 +788,7 @@ function endBattle(isVictory) {
     }
 }
 
-// 新增狩獵成功畫面
+// 顯示狩獵成功畫面
 function showHuntSuccessScreen() {
     try {
         // 創建遮罩背景
@@ -834,6 +834,8 @@ function showHuntSuccessScreen() {
                         <span class="reward-value">+${levelData.isBoss ? 3 : 1}</span>
                     </div>
                 </div>
+                
+                <div id="level-up-section"></div>
                 
                 <div class="hunter-notes">
                     <div class="note-title">探險筆記</div>
@@ -903,137 +905,6 @@ function showHuntSuccessScreen() {
     }
 }
 
-// 修改 showAttackEffect 函數來適應不同的 HTML 結構
-function showAttackEffect(targetId, damage) {
-    console.log(`顯示攻擊效果，目標: ${targetId}，傷害: ${damage}`);
-    
-    // 尋找適合的容器元素
-    let battleContainer = document.getElementById('battle-container');
-    
-    // 如果找不到 battle-container，尋找其他可能的元素
-    if (!battleContainer) {
-        const possibleContainers = [
-            document.querySelector('.battle-area'),
-            document.querySelector('.battle-container'),
-            document.querySelector('.game-container'),
-            document.querySelector('.container'),
-            document.getElementById('main-content'),
-            document.body // 最後的備用選項
-        ];
-        
-        // 使用找到的第一個非空元素
-        for (const container of possibleContainers) {
-            if (container) {
-                battleContainer = container;
-                console.log('使用備用容器:', container.tagName, container.className || container.id);
-                break;
-            }
-        }
-    }
-    
-    // 創建效果容器
-    let effectsContainer = document.getElementById('effects-container');
-    if (!effectsContainer) {
-        effectsContainer = document.createElement('div');
-        effectsContainer.id = 'effects-container';
-        effectsContainer.style.position = 'fixed'; // 改為 fixed 以確保顯示
-        effectsContainer.style.top = '0';
-        effectsContainer.style.left = '0';
-        effectsContainer.style.width = '100%';
-        effectsContainer.style.height = '100%';
-        effectsContainer.style.pointerEvents = 'none'; // 讓點擊事件穿透
-        effectsContainer.style.zIndex = '9999'; // 確保在頂層
-        
-        // 添加到找到的容器或直接添加到 body
-        if (battleContainer) {
-            battleContainer.appendChild(effectsContainer);
-        } else {
-            console.warn('找不到合適的容器，將效果直接添加到 body');
-            document.body.appendChild(effectsContainer);
-        }
-    }
-    
-    // 創建攻擊效果元素
-    const attackEffect = document.createElement('div');
-    attackEffect.className = 'attack-effect';
-    attackEffect.style.position = 'absolute';
-    attackEffect.style.width = '50px';
-    attackEffect.style.height = '50px';
-    attackEffect.style.backgroundColor = targetId === 'monster' ? 'red' : 'blue';
-    attackEffect.style.borderRadius = '50%';
-    attackEffect.style.opacity = '0.7';
-    attackEffect.style.left = `${Math.random() * 80 + 10}%`;
-    attackEffect.style.top = `${Math.random() * 80 + 10}%`;
-    effectsContainer.appendChild(attackEffect);
-    
-    // 創建傷害文字
-    const damageText = document.createElement('div');
-    damageText.className = 'damage-text';
-    damageText.textContent = `-${damage}`;
-    damageText.style.position = 'absolute';
-    damageText.style.color = targetId === 'monster' ? 'red' : 'orange';
-    damageText.style.fontWeight = 'bold';
-    damageText.style.fontSize = '24px';
-    damageText.style.textShadow = '1px 1px 2px black';
-    damageText.style.left = `${Math.random() * 60 + 20}%`;
-    damageText.style.top = `${Math.random() * 60 + 20}%`;
-    effectsContainer.appendChild(damageText);
-    
-    // 添加動畫效果
-    attackEffect.animate([
-        { transform: 'scale(0.5)', opacity: 0.8 },
-        { transform: 'scale(1.2)', opacity: 1 },
-        { transform: 'scale(1)', opacity: 0 }
-    ], {
-        duration: 800,
-        easing: 'ease-out'
-    });
-    
-    damageText.animate([
-        { transform: 'translateY(0)', opacity: 1 },
-        { transform: 'translateY(-50px)', opacity: 0 }
-    ], {
-        duration: 1000,
-        easing: 'ease-out'
-    });
-    
-    // 動畫結束後移除元素
-    setTimeout(() => {
-        try {
-            if (attackEffect.parentNode) attackEffect.parentNode.removeChild(attackEffect);
-            if (damageText.parentNode) damageText.parentNode.removeChild(damageText);
-        } catch (e) {
-            console.warn('移除效果元素時發生錯誤:', e);
-        }
-    }, 1000);
-}
-
-// 將Markdown轉換為HTML
-function renderMarkdown(markdown) {
-    // 簡單的Markdown轉HTML處理
-    // 標題
-    let html = markdown.replace(/^## (.*$)/gm, '<h2>$1</h2>')
-                       .replace(/^### (.*$)/gm, '<h3>$1</h3>')
-                       .replace(/^#### (.*$)/gm, '<h4>$1</h4>');
-    
-    // 程式碼塊
-    html = html.replace(/```python\n([\s\S]*?)```/g, '<pre><code class="language-python">$1</code></pre>');
-    html = html.replace(/```([\s\S]*?)```/g, '<pre><code>$1</code></pre>');
-    
-    // 粗體和斜體
-    html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-    html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
-    
-    // 列表
-    html = html.replace(/^\s*[\-\*]\s+(.*$)/gm, '<li>$1</li>');
-    html = html.replace(/(<li>.*<\/li>\n)+/g, '<ul>$&</ul>');
-    
-    // 段落
-    html = html.replace(/^(?!<[hou])(.+)$/gm, '<p>$1</p>');
-    
-    return html;
-}
-
 // 記錄關卡完成並處理經驗值和升級
 function recordLevelCompletion() {
     fetch('api/complete-level.php', {
@@ -1069,15 +940,53 @@ function recordLevelCompletion() {
             
             // 如果升級了，顯示升級訊息
             if (data.levelUp) {
-                showLevelUpNotification(data.newLevel);
-            }
-            
-            // 更新結果模態窗口的經驗值顯示
-            updateResultModalExp(data.expReward, data.currentExp, data.expToNextLevel);
-            
-            // 如果升級了，更新玩家數據
-            if (data.levelUp) {
-                updatePlayerStats(data.newLevel);
+                showLevelUpNotification(data.newLevel, data.newLevelTitle);
+                
+                // 在狩獵成功畫面中添加升級信息
+                const levelUpSection = document.getElementById('level-up-section');
+                if (levelUpSection) {
+                    levelUpSection.innerHTML = `
+                        <div class="level-up-info">
+                            <div class="level-up-title">等級提升！</div>
+                            <div class="level-up-details">
+                                <div class="new-level">
+                                    <span class="level-label">新等級</span>
+                                    <span class="level-value">${data.newLevel}</span>
+                                </div>
+                                <div class="level-title">
+                                    <span class="title-label">稱號</span>
+                                    <span class="title-value">${data.newLevelTitle || `等級 ${data.newLevel}`}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="exp-progress">
+                            <div class="exp-bar-container">
+                                <div class="exp-label">經驗值</div>
+                                <div class="exp-bar-wrapper">
+                                    <div class="exp-bar" style="width: ${(data.currentExp/data.expToNextLevel*100).toFixed(1)}%"></div>
+                                </div>
+                                <div class="exp-values">${data.currentExp} / ${data.expToNextLevel}</div>
+                            </div>
+                        </div>
+                    `;
+                }
+            } else {
+                // 沒有升級，但仍顯示經驗進度
+                const levelUpSection = document.getElementById('level-up-section');
+                if (levelUpSection) {
+                    const expPercentage = (data.currentExp/data.expToNextLevel*100).toFixed(1);
+                    levelUpSection.innerHTML = `
+                        <div class="exp-progress">
+                            <div class="exp-bar-container">
+                                <div class="exp-label">經驗值進度</div>
+                                <div class="exp-bar-wrapper">
+                                    <div class="exp-bar" style="width: ${expPercentage}%"></div>
+                                </div>
+                                <div class="exp-values">${data.currentExp} / ${data.expToNextLevel} (${expPercentage}%)</div>
+                            </div>
+                        </div>
+                    `;
+                }
             }
         }
     })
@@ -1086,42 +995,8 @@ function recordLevelCompletion() {
     });
 }
 
-// 顯示獲得的經驗值
-function showExpReward(expAmount) {
-    try {
-        // 建立經驗值獲得提示元素
-        const expNotice = document.createElement('div');
-        expNotice.className = 'exp-notice';
-        expNotice.style.position = 'fixed';
-        expNotice.style.bottom = '30px';
-        expNotice.style.left = '50%';
-        expNotice.style.transform = 'translateX(-50%)';
-        expNotice.style.background = 'rgba(65, 105, 225, 0.8)';
-        expNotice.style.color = 'white';
-        expNotice.style.padding = '15px 25px';
-        expNotice.style.borderRadius = '10px';
-        expNotice.style.fontWeight = 'bold';
-        expNotice.style.boxShadow = '0 0 10px rgba(0,0,0,0.2)';
-        expNotice.style.zIndex = '1000';
-        expNotice.style.animation = 'fadeInUp 0.5s ease-out';
-        
-        expNotice.textContent = `+ ${expAmount} 經驗值！`;
-        document.body.appendChild(expNotice);
-        
-        // 3秒後移除
-        setTimeout(() => {
-            if (expNotice.parentNode) {
-                expNotice.style.animation = 'fadeOut 0.5s ease-out';
-                setTimeout(() => expNotice.remove(), 500);
-            }
-        }, 3000);
-    } catch (error) {
-        console.error('顯示經驗值獎勵時發生錯誤:', error);
-    }
-}
-
 // 顯示升級通知
-function showLevelUpNotification(newLevel) {
+function showLevelUpNotification(newLevel, levelTitle) {
     try {
         // 建立升級通知元素
         const levelUpEffect = document.createElement('div');
@@ -1154,7 +1029,7 @@ function showLevelUpNotification(newLevel) {
         levelUpTitle.style.textShadow = '2px 2px 4px rgba(0,0,0,0.5)';
         
         const levelUpInfo = document.createElement('div');
-        levelUpInfo.textContent = `你現在是等級 ${newLevel} 了！`;
+        levelUpInfo.textContent = `你現在是等級 ${newLevel}：${levelTitle || ''}`;
         levelUpInfo.style.color = 'white';
         levelUpInfo.style.fontSize = '24px';
         
@@ -1185,45 +1060,6 @@ function showLevelUpNotification(newLevel) {
         }, 4000);
     } catch (error) {
         console.error('顯示升級通知時發生錯誤:', error);
-    }
-}
-
-// 更新結果模態窗口的經驗值顯示
-function updateResultModalExp(expReward, currentExp, expToNextLevel) {
-    try {
-        const expGainElement = document.getElementById('exp-gain');
-        if (expGainElement) {
-            expGainElement.textContent = expReward;
-        }
-        
-        // 如果模態窗口有經驗條，也更新它
-        const expBarElement = document.getElementById('exp-progress');
-        if (expBarElement) {
-            const expPercent = (currentExp / expToNextLevel) * 100;
-            expBarElement.style.width = `${expPercent}%`;
-            
-            const expTextElement = document.getElementById('exp-text');
-            if (expTextElement) {
-                expTextElement.textContent = `${currentExp}/${expToNextLevel}`;
-            }
-        }
-    } catch (error) {
-        console.error('更新經驗值顯示時發生錯誤:', error);
-    }
-}
-
-// 更新玩家屬性顯示
-function updatePlayerStats(newLevel) {
-    try {
-        // 更新等級顯示
-        const levelElements = document.querySelectorAll('.level-value, .level-display, .player-level');
-        levelElements.forEach(element => {
-            if (element) element.textContent = newLevel;
-        });
-        
-        // 可能還需要更新攻擊力和HP顯示，如果UI中有這些元素
-    } catch (error) {
-        console.error('更新玩家屬性顯示時發生錯誤:', error);
     }
 }
 
@@ -1440,8 +1276,257 @@ function addCssStyles() {
     document.head.appendChild(styleElement);
 }
 
+// 將Markdown轉換為HTML
+function renderMarkdown(markdown) {
+    if (!markdown) return '';
+    
+    let html = markdown;
+    
+    // 處理標題
+    html = html.replace(/^### (.*$)/gm, '<h3>$1</h3>');
+    html = html.replace(/^## (.*$)/gm, '<h2>$1</h2>');
+    html = html.replace(/^# (.*$)/gm, '<h1>$1</h1>');
+    
+    // 處理程式碼區塊
+    html = html.replace(/```python\n([\s\S]*?)```/g, '<pre class="code-block"><code class="language-python">$1</code></pre>');
+    html = html.replace(/```([\s\S]*?)```/g, '<pre class="code-block"><code>$1</code></pre>');
+    
+    // 處理行內程式碼
+    html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+    
+    // 處理粗體和斜體
+    html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+    html = html.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+    
+    // 處理列表
+    html = html.replace(/^\s*[\-\*] (.*$)/gm, '<li>$1</li>');
+    html = html.replace(/(<li>.*<\/li>\n)+/g, '<ul>$&</ul>');
+    
+    // 處理段落 (非標題、列表或程式碼區塊的行)
+    html = html.replace(/^(?!<h|<ul|<pre|<li)(.+)$/gm, '<p>$1</p>');
+    
+    // 處理換行
+    html = html.replace(/\n\n/g, '<br><br>');
+    
+    return html;
+}
+
 // 在頁面載入完成後添加 CSS 樣式
 document.addEventListener('DOMContentLoaded', function() {
     addCssStyles();
+    // ...existing code...
+});
+
+// 顯示攻擊效果
+function showAttackEffect(targetId, damage) {
+    try {
+        console.log(`顯示攻擊效果：目標=${targetId}，傷害=${damage}`);
+        
+        // 尋找適合的容器元素
+        let battleContainer = document.querySelector('.battle-scene') || 
+                             document.querySelector('.battle-container') || 
+                             document.getElementById('battle-container');
+                             
+        if (!battleContainer) {
+            console.warn('找不到戰鬥場景容器，直接使用body');
+            battleContainer = document.body;
+        }
+        
+        // 決定效果的位置和方向
+        const isMonsterTarget = targetId === 'monster';
+        const targetElement = isMonsterTarget ? 
+                            document.querySelector('.monster-sprite') || document.querySelector('.monster-unit') : 
+                            document.querySelector('.character-sprite') || document.querySelector('.character-unit');
+        
+        // 如果找不到目標元素，就在容器中心顯示效果
+        let targetRect = battleContainer.getBoundingClientRect();
+        if (targetElement) {
+            targetRect = targetElement.getBoundingClientRect();
+        }
+        
+        // 創建攻擊特效元素
+        const effectElement = document.createElement('div');
+        effectElement.className = 'attack-effect';
+        effectElement.style.position = 'absolute';
+        effectElement.style.zIndex = '100';
+        effectElement.style.pointerEvents = 'none';
+        
+        // 設置特效初始位置
+        const battleRect = battleContainer.getBoundingClientRect();
+        effectElement.style.left = `${targetRect.left - battleRect.left + targetRect.width/2 - 25}px`;
+        effectElement.style.top = `${targetRect.top - battleRect.top + targetRect.height/2 - 25}px`;
+        
+        // 設置特效樣式
+        effectElement.style.width = '50px';
+        effectElement.style.height = '50px';
+        effectElement.style.backgroundSize = 'contain';
+        effectElement.style.backgroundPosition = 'center';
+        effectElement.style.backgroundRepeat = 'no-repeat';
+        
+        // 根據目標選擇不同的效果
+        if (isMonsterTarget) {
+            effectElement.style.backgroundImage = 'url("assets/images/sword-effect.png")';
+            effectElement.style.backgroundImage = 'none'; // 備用：如果圖片不存在
+            effectElement.innerHTML = '⚔️'; // 使用表情符號作為備用
+            effectElement.style.fontSize = '40px';
+            effectElement.style.display = 'flex';
+            effectElement.style.justifyContent = 'center';
+            effectElement.style.alignItems = 'center';
+        } else {
+            effectElement.style.backgroundImage = 'url("assets/images/claw-effect.png")';
+            effectElement.style.backgroundImage = 'none'; // 備用：如果圖片不存在
+            effectElement.innerHTML = '👹'; // 使用表情符號作為備用
+            effectElement.style.fontSize = '40px';
+            effectElement.style.display = 'flex';
+            effectElement.style.justifyContent = 'center';
+            effectElement.style.alignItems = 'center';
+        }
+        
+        // 添加到戰鬥容器
+        battleContainer.appendChild(effectElement);
+        
+        // 創建傷害數字元素
+        const damageElement = document.createElement('div');
+        damageElement.className = 'damage-number';
+        damageElement.textContent = `-${damage}`;
+        damageElement.style.position = 'absolute';
+        damageElement.style.zIndex = '101';
+        damageElement.style.color = 'red';
+        damageElement.style.fontWeight = 'bold';
+        damageElement.style.fontSize = '24px';
+        damageElement.style.textShadow = '1px 1px 2px black';
+        damageElement.style.pointerEvents = 'none';
+        
+        // 設置傷害數字的初始位置（稍微偏移，以免與效果重疊）
+        damageElement.style.left = `${targetRect.left - battleRect.left + targetRect.width/2}px`;
+        damageElement.style.top = `${targetRect.top - battleRect.top + targetRect.height/3}px`;
+        
+        // 添加到戰鬥容器
+        battleContainer.appendChild(damageElement);
+        
+        // 創建動畫效果
+        const attackAnimation = effectElement.animate([
+            { transform: 'scale(0.5) rotate(-20deg)', opacity: 0 },
+            { transform: 'scale(1.2) rotate(0deg)', opacity: 1 },
+            { transform: 'scale(1) rotate(10deg)', opacity: 0 }
+        ], {
+            duration: 600,
+            easing: 'ease-out'
+        });
+        
+        const damageAnimation = damageElement.animate([
+            { transform: 'translateY(0)', opacity: 1 },
+            { transform: 'translateY(-50px)', opacity: 0 }
+        ], {
+            duration: 1000,
+            easing: 'ease-out'
+        });
+        
+        // 動畫完成後移除元素
+        attackAnimation.onfinish = () => {
+            if (effectElement.parentNode) {
+                effectElement.parentNode.removeChild(effectElement);
+            }
+        };
+        
+        damageAnimation.onfinish = () => {
+            if (damageElement.parentNode) {
+                damageElement.parentNode.removeChild(damageElement);
+            }
+        };
+        
+        // 播放攻擊音效 (如果存在)
+        try {
+            const audioType = isMonsterTarget ? 'playerAttack' : 'monsterAttack';
+            playSound(audioType);
+        } catch (e) {
+            console.log('播放攻擊音效失敗');
+        }
+        
+    } catch (error) {
+        console.error('顯示攻擊效果時出錯:', error);
+        // 錯誤處理：即使特效失敗，戰鬥邏輯依然繼續
+    }
+}
+
+// 播放音效 (如果不存在則靜默失敗)
+function playSound(soundType) {
+    // 這是一個簡單的音效播放函數，可以根據需要實現
+    console.log(`播放音效：${soundType}`);
+    
+    // 檢查是否有音效系統
+    if (window.Audio) {
+        try {
+            let soundFile;
+            switch (soundType) {
+                case 'playerAttack':
+                    soundFile = 'assets/sounds/player-attack.mp3';
+                    break;
+                case 'monsterAttack':
+                    soundFile = 'assets/sounds/monster-attack.mp3';
+                    break;
+                case 'victory':
+                    soundFile = 'assets/sounds/victory.mp3';
+                    break;
+                case 'defeat':
+                    soundFile = 'assets/sounds/defeat.mp3';
+                    break;
+                case 'levelUp':
+                    soundFile = 'assets/sounds/level-up.mp3';
+                    break;
+                default:
+                    soundFile = null;
+            }
+            
+            if (soundFile) {
+                const audio = new Audio(soundFile);
+                audio.volume = 0.5; // 設置音量
+                audio.play().catch(e => {
+                    console.log('播放音效失敗：可能需要用戶交互才能播放音效');
+                });
+            }
+        } catch (e) {
+            console.log('音效系統錯誤:', e);
+        }
+    }
+}
+
+// 添加 CSS 樣式
+function addAttackEffectStyles() {
+    const styleElement = document.createElement('style');
+    styleElement.textContent = `
+        .attack-effect {
+            position: absolute;
+            z-index: 100;
+        }
+        
+        .damage-number {
+            position: absolute;
+            z-index: 101;
+            color: red;
+            font-weight: bold;
+            font-size: 24px;
+            text-shadow: 1px 1px 2px black;
+        }
+        
+        @keyframes attackFadeIn {
+            0% { opacity: 0; transform: scale(0.5) rotate(-20deg); }
+            50% { opacity: 1; transform: scale(1.2) rotate(0deg); }
+            100% { opacity: 0; transform: scale(1) rotate(10deg); }
+        }
+        
+        @keyframes damageFloat {
+            0% { opacity: 1; transform: translateY(0); }
+            100% { opacity: 0; transform: translateY(-50px); }
+        }
+    `;
+    document.head.appendChild(styleElement);
+}
+
+// 在頁面加載完成後添加樣式
+document.addEventListener('DOMContentLoaded', function() {
+    // 添加攻擊效果的樣式
+    addAttackEffectStyles();
+    
     // ...existing code...
 });
