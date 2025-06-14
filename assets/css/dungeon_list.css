@@ -1,0 +1,206 @@
+body {
+    overflow-y: auto;
+    background: #1a1a1a;
+    color: #d4c8b8;
+    min-height: 100vh;
+    margin: 0;
+    font-family: 'Noto Sans TC', 'Microsoft JhengHei', Arial, sans-serif;
+}
+
+.main-content {
+    background: transparent;
+    margin: 0 auto;
+    padding: 32px 0 0 0;
+    min-height: auto;
+    height: auto;
+}
+.dashboard-header {
+    margin-bottom: 32px;
+    
+}
+.dungeons-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    background-image: url(../images/dungeon-map-bg.jpg);
+    background-size: cover;
+    padding: 30px;
+    position: relative;
+    border: 2px solid var(--border-color);
+    box-shadow: 0 0 20px var(--shadow-color);
+    min-height: 600px;
+ 
+}
+.dungeon-row {
+    display: flex;
+    justify-content: space-around;
+    margin: 25px 0;
+    position: relative;
+    z-index: 2;
+}
+.dungeon-card {
+        background-color: rgba(26, 20, 16, 0.9);
+    overflow: hidden;
+    box-shadow: 0 5px 15px var(--shadow-color);
+    border: 2px solid var(--border-color);
+    transition: all 0.3s;
+    width: 240px;
+    position: relative;
+    margin: 0 15px;
+    transform-style: preserve-3d;
+    perspective: 1000px;
+}
+.dungeon-card.locked {
+    opacity: 0.5;
+    filter: grayscale(0.7);
+}
+.dungeon-card .dungeon-number {
+    position: absolute;
+    top: 18px;
+    left: 18px;
+    background: #8b0000;
+    color: #fff;
+    border-radius: 6px;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.1rem;
+    font-weight: bold;
+    box-shadow: 0 2px 8px #0008;
+    z-index: 2;
+}
+.dungeon-card .dungeon-name {
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: #fff;
+    margin-bottom: 10px;
+    margin-left: 0;
+    text-shadow: 0 2px 8px #0008;
+    margin-top: 8px;
+}
+.dungeon-card .dungeon-levels,
+.dungeon-card .dungeon-difficulty {
+    color: #ffe4b5;
+    font-size: 1.05rem;
+    margin-bottom: 8px;
+}
+.dungeon-card .dungeon-difficulty .star {
+    color: #ff4000;
+    font-size: 1.1em;
+    margin-right: 2px;
+}
+.dungeon-card .dungeon-theme {
+    color: #ffb84d;
+    font-size: 1rem;
+    margin-bottom: 8px;
+}
+.dungeon-card .dungeon-desc {
+    color: #bfae9c;
+    font-size: 0.98rem;
+    margin-bottom: 10px;
+}
+.dungeon-card .progress-bar-container {
+    background: #534b42;
+    border-radius: 6px;
+    height: 8px;
+    width: 100%;
+    margin: 8px 0 2px 0;
+    overflow: hidden;
+}
+.dungeon-card .progress-bar {
+    background: #ff4000;
+    height: 100%;
+    border-radius: 6px;
+    transition: width 0.3s;
+}
+.dungeon-card .progress-text {
+    color: #ffe4b5;
+    font-size: 0.98rem;
+    margin-bottom: 8px;
+}
+.dungeon-card .dungeon-status {
+    margin-bottom: 10px;
+    font-size: 1rem;
+    font-weight: bold;
+    color: #ff4000;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+.dungeon-card .dungeon-status.completed {
+    color: #27ae60;
+}
+.dungeon-card .dungeon-status.locked {
+    color: #aaa;
+}
+.dungeon-card .btn-enter, .dungeon-card .locked-button {
+    width: 100%;
+    margin-top: 10px;
+    font-size: 1.1rem;
+    font-weight: bold;
+    border-radius: 8px;
+    padding: 10px 0;
+}
+.dungeon-card .btn-enter {
+    background: #8b0000;
+    color: #fff;
+    border: none;
+}
+.dungeon-card .btn-enter:active {
+    filter: brightness(0.95);
+}
+.dungeon-card .locked-button {
+    background: #444;
+    color: #ccc;
+    border: none;
+    cursor: not-allowed;
+}
+.dungeon-card .dungeon-status-icon {
+    font-size: 1.2em;
+    margin-right: 4px;
+}
+.dungeon-card#dungeon-card-0-0 { grid-column: 1; grid-row: 1; }
+.dungeon-card#dungeon-card-0-1 { grid-column: 2; grid-row: 1; }
+.dungeon-card#dungeon-card-1-0 { grid-column: 1; grid-row: 2; }
+.dungeon-card#dungeon-card-1-1 { grid-column: 2; grid-row: 2; }
+.dungeon-card#dungeon-card-2-0 { grid-column: 1 / span 2; grid-row: 3; justify-self: center; }
+.dungeon-path-svg {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 0;
+}
+@media (max-width: 1100px) {
+    .dungeons-grid {
+        gap: 24px 12px;
+        min-height: 400px;
+    }
+    .dungeon-card {
+        min-width: 90vw;
+        max-width: 98vw;
+        padding: 18px 8px 18px 8px;
+    }
+}
+@media (max-width: 700px) {
+    .dungeons-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+    .dungeon-card {
+        min-width: 90vw;
+        max-width: 98vw;
+    }
+}
+html, body {
+  margin: 0;
+  padding: 0;
+           /* 禁用所有捲軸 */
+
+  box-sizing: border-box;
+}

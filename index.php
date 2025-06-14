@@ -79,6 +79,61 @@ $site_description = "以魔物獵人風格學習 Python 程式設計";
         </div>
     </div>
 
+    <!-- 功能按鈕 -->
+    <div class="btn-group mb-4" style="gap:18px;">
+        <button class="btn btn-dungeon" onclick="loadPanel('dungeon_list.php')">
+            <i class="fas fa-dungeon"></i> 副本列表
+        </button>
+        <button class="btn btn-room" onclick="loadPanel('room_list.php')">
+            <i class="fas fa-search"></i> 搜尋房間
+        </button>
+    </div>
+    <style>
+    .btn-group {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 18px;
+        margin-bottom: 24px;
+    }
+    .btn-dungeon, .btn-room {
+        font-size: 1.15rem;
+        font-weight: bold;
+        padding: 12px 32px;
+        border-radius: 12px;
+        border: none;
+        transition: background 0.18s, box-shadow 0.18s, transform 0.12s;
+        box-shadow: 0 2px 12px #0004;
+        letter-spacing: 1px;
+        outline: none;
+    }
+    .btn-dungeon {
+        background: linear-gradient(90deg, #8b0000 60%, #ff4000 100%);
+        color: #fff;
+    }
+    .btn-dungeon:hover, .btn-dungeon:focus {
+        background: linear-gradient(90deg, #a80000 60%, #ff6a00 100%);
+        color: #fff;
+        transform: translateY(-2px) scale(1.04);
+        box-shadow: 0 4px 18px #ff400055;
+    }
+    .btn-room {
+        background: linear-gradient(90deg, #ffb84d 60%, #ff4000 100%);
+        color: #232526;
+    }
+    .btn-room:hover, .btn-room:focus {
+        background: linear-gradient(90deg, #ffd580 60%, #ff6a00 100%);
+        color: #232526;
+        transform: translateY(-2px) scale(1.04);
+        box-shadow: 0 4px 18px #ffb84d55;
+    }
+    .btn-group i {
+        margin-right: 8px;
+        font-size: 1.2em;
+        vertical-align: middle;
+    }
+    </style>
+
     <script src="assets/js/auth.js"></script>
 </body>
 </html>

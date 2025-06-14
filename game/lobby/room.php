@@ -1,273 +1,360 @@
 <?php
 session_start();
+require_once __DIR__ . '/../../config/database.php';
+
+$user_id = isset($_SESSION["user_id"]) ? intval($_SESSION["user_id"]) : 0;
 $username = isset($_SESSION["username"]) ? $_SESSION["username"] : "訪客";
+$invite_code = isset($_GET['code']) ? $_GET['code'] : '';
+
+$db = new Database();
+$pdo = $db->getConnection();
+
+if (!$pdo) {
+    die('資料庫連線失敗');
+}
+
+// 取得房間資訊
+$stmt = $pdo->prepare("SELECT t.*, d.name AS dungeon_name FROM teams t LEFT JOIN dungeons d ON t.dungeon_id = d.id WHERE t.invite_code = ?");
+$stmt->execute([$invite_code]);
+$room = $stmt->fetch(PDO::FETCH_ASSOC);
+
+// 取得當前關卡名稱（假設有 current_level_id 欄位，且 levels 表有 name 欄位）
+$current_level_name = '';
+if (!empty($room['current_level_id'])) {
+    $stmt = $pdo->prepare("SELECT name FROM levels WHERE level_id = ?");
+    $stmt->execute([$room['current_level_id']]);
+    $level = $stmt->fetch(PDO::FETCH_ASSOC);
+    if ($level) {
+        $current_level_name = $level['name'];
+    }
+}
+
+if (!$room) {
+    echo '<div class="container py-5 text-center text-light"><h2>房間不存在或已被刪除</h2><a href="index.php" class="btn btn-secondary mt-3">返回大廳</a></div>';
+    exit;
+}
+
+// 取得房間成員
+$stmt = $pdo->prepare("SELECT tm.user_id, p.username FROM team_members tm JOIN players p ON tm.user_id = p.player_id WHERE tm.team_id = ? ORDER BY tm.joined_at ASC, tm.member_id ASC");
+$stmt->execute([$room['team_id']]);
+$members = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+// 房主（預設第一位成員）
+$room_owner_id = $members[0]['user_id'] ?? null;
+
+// 處理踢人
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['kick_user_id'])) {
+    if ($user_id == $room_owner_id && $_POST['kick_user_id'] != $room_owner_id) {
+        $kick_id = intval($_POST['kick_user_id']);
+        $stmt = $pdo->prepare("DELETE FROM team_members WHERE team_id = ? AND user_id = ?");
+        $stmt->execute([$room['team_id'], $kick_id]);
+        header("Location: room.php?code=" . urlencode($invite_code));
+        exit;
+    }
+}
+
+// 處理轉讓房主
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['transfer_owner_id'])) {
+    if ($user_id == $room_owner_id) {
+        $new_owner_id = intval($_POST['transfer_owner_id']);
+        // 先移除新房主，再重新插入（確保順序）
+        $stmt = $pdo->prepare("DELETE FROM team_members WHERE team_id = ? AND user_id = ?");
+        $stmt->execute([$room['team_id'], $new_owner_id]);
+        $stmt = $pdo->prepare("INSERT INTO team_members (user_id, team_id, joined_at) VALUES (?, ?, NOW())");
+        $stmt->execute([$new_owner_id, $room['team_id']]);
+        header("Location: room.php?code=" . urlencode($invite_code));
+        exit;
+    }
+}
+
+// 處理解散房間
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['disband_room'])) {
+    if ($user_id == $room_owner_id) {
+        $stmt = $pdo->prepare("DELETE FROM teams WHERE team_id = ?");
+        $stmt->execute([$room['team_id']]);
+        header("Location: index.php");
+        exit;
+    }
+}
+
+// 處理房間設定
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_setting'])) {
+    if ($user_id == $room_owner_id) {
+        $is_private = isset($_POST['private_room']) ? 1 : 0;
+        $room_password = $is_private ? trim($_POST['room_password'] ?? '') : '';
+        $stmt = $pdo->prepare("UPDATE teams SET is_public = ?, room_password = ? WHERE team_id = ?");
+        $stmt->execute([$is_private ? 0 : 1, $room_password, $room['team_id']]);
+        header("Location: room.php?code=" . urlencode($invite_code));
+        exit;
+    }
+}
+
+// 重新取得房間資訊與成員
+$stmt = $pdo->prepare("SELECT t.*, d.name AS dungeon_name FROM teams t LEFT JOIN dungeons d ON t.dungeon_id = d.id WHERE t.invite_code = ?");
+$stmt->execute([$invite_code]);
+$room = $stmt->fetch(PDO::FETCH_ASSOC);
+$stmt = $pdo->prepare("SELECT tm.user_id, p.username FROM team_members tm JOIN players p ON tm.user_id = p.player_id WHERE tm.team_id = ? ORDER BY tm.joined_at ASC, tm.member_id ASC");
+$stmt->execute([$room['team_id']]);
+$members = $stmt->fetchAll(PDO::FETCH_ASSOC);
+$room_owner_id = $members[0]['user_id'] ?? null;
+$member_count = count($members);
 ?>
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <title>遊戲房間</title>
+    <title><?php echo htmlspecialchars($room['room_name'] ?: '未命名房間'); ?></title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- 使用 remixicon CDN 以支援 fi-* icon -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/remixicon@4.2.0/fonts/remixicon.css">
- <!--icond-->
-    <link rel="stylesheet" href="https://cdn-uicons.flaticon.com/uicons-bold-rounded/css/uicons-bold-rounded.css">
-
     <style>
-        body { background: #181a1b; color: #fff; }
-        .room-main { max-width: 700px; margin: 40px auto; background: #23272e; border-radius: 16px; box-shadow: 0 4px 32px #000a; padding: 32px 32px 24px 32px; }
-        .room-header { display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; }
-        .room-title { font-size: 2.2rem; font-weight: bold; margin-bottom: 0; }
-        .room-code-box { display: flex; align-items: center; gap: 12px; margin-top: 18px; }
-        .room-code-label { font-size: 1.1rem; font-weight: 500; color: #bbb; }
-        .room-code-value { font-size: 1.3rem; font-weight: bold; color: #fff; letter-spacing: 2px; }
-        .btn-copy { background: #1769fa; color: #fff; border-radius: 8px; font-weight: 500; padding: 4px 18px; font-size: 1rem; }
-        .room-count-box { background: #23272e; color: #fff; border-radius: 8px; padding: 8px 22px; font-size: 1.1rem; font-weight: 500; margin-left: auto; }
-        .room-section-title { font-size: 1.25rem; font-weight: bold; margin-top: 32px; margin-bottom: 18px; }
-        .member-list { margin-bottom: 30px; }
-        .member-card { background: #232526; border-radius: 10px; padding: 18px 24px; margin-bottom: 18px; display: flex; align-items: center; justify-content: space-between; border: 1px solid #292929; }
-        .member-info { display: flex; align-items: center; gap: 12px; }
-        .member-icon { font-size: 1.5rem; }
-        .crown { color: #ffd700; font-size: 1.5em; margin-right: 6px; vertical-align: middle; }
-        .ready-icon { color: #4caf50; font-size: 1.3em; }
-        .notready-icon { color: #f44336; font-size: 1.3em; }
-        .btn-kick { background: #e53935; color: #fff; border-radius: 8px; font-size: 1rem; font-weight: 500; padding: 4px 18px; }
-        .btn-disband { background: #b71c1c; color: #fff; border-radius: 8px; font-size: 1rem; font-weight: 500; padding: 4px 18px; margin-left: 10px; }
-        .btn-setting { background: #444; color: #fff; border-radius: 8px; font-size: 1rem; font-weight: 500; padding: 4px 18px; margin-left: 10px; }
-        .btn-battle { background: #1e88e5; color: #fff; border-radius: 8px; font-size: 1.1rem; font-weight: 600; padding: 8px 32px; margin-top: 18px; box-shadow: 0 2px 8px #0002; }
-        .room-setting-box { background: #23272e; border-radius: 10px; padding: 24px 18px 18px 18px; border: 1px solid #23272e; margin-top: 30px; }
-        .form-check-label, .form-label { color: #fff; }
-        .form-control[readonly] { background: #353535; color: #fff; border: none; }
+        body {
+            background: #111;
+            color: #fff;
+            min-height: 100vh;
+            margin: 0;
+            font-family: 'Noto Sans TC', 'Microsoft JhengHei', Arial, sans-serif;
+        }
+        .room-main {
+            background: #232526;
+            border-radius: 18px;
+            box-shadow: 0 8px 32px #0007;
+            max-width: 600px;
+            min-width: 350px;
+            margin: 40px auto;
+            padding: 0;
+            position: relative;
+        }
+        .room-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            padding: 38px 38px 0 38px;
+        }
+        .room-title {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #fff;
+            margin-bottom: 8px;
+        }
+        .room-code-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .room-code-label {
+            color: #bfc9d1;
+            font-weight: 500;
+        }
+        .room-people {
+            background: #181a1b;
+            border-radius: 8px;
+            padding: 6px 18px;
+            font-weight: bold;
+            color: #bfc9d1;
+            font-size: 1.1rem;
+        }
+        .room-body {
+            padding: 0 38px;
+        }
+        .room-member-title, .room-setting-title {
+            font-size: 1.1rem;
+            font-weight: bold;
+            margin-top: 32px;
+            margin-bottom: 10px;
+            color: #fff;
+        }
+        .member-list {
+            background: #363738;
+            border-radius: 8px;
+            padding: 10px 0;
+            margin-bottom: 18px;
+        }
+        .member-card {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 24px;
+            color: #fff;
+        }
+        .member-card:not(:last-child) {
+            border-bottom: 1px solid #444;
+        }
+        .member-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .badge-owner {
+            background: #2257e7;
+            color: #fff;
+            margin-right: 8px;
+            font-size: 0.95em;
+            padding: 2px 8px;
+            border-radius: 6px;
+        }
+        .btn-kick {
+            background: #e74c3c;
+            color: #fff;
+            border-radius: 6px;
+            border: none;
+            padding: 4px 18px;
+            font-size: 1rem;
+        }
+        .btn-kick:hover {
+            background: #c0392b;
+        }
+        .btn-transfer {
+            background: #4a90e2;
+            color: #fff;
+            border-radius: 6px;
+            border: none;
+            padding: 4px 18px;
+            margin-left: 8px;
+            font-size: 1rem;
+        }
+        .btn-transfer:hover {
+            background: #2257e7;
+        }
+        .room-setting-row {
+            margin-top: 10px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .btn-setting {
+            margin-left: 10px;
+        }
+        .room-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            padding: 28px 38px 28px 38px;
+        }
+        .btn-battle {
+            background: #2257e7;
+            color: #fff;
+            border-radius: 8px;
+            min-width: 120px;
+            font-weight: bold;
+        }
+        .btn-battle:active {
+            filter: brightness(0.95);
+        }
         @media (max-width: 600px) {
-            .room-main { padding: 10px 2vw; }
-            .room-title { font-size: 1.3rem; }
-            .room-section-title { font-size: 1.1rem; }
-            .member-card { padding: 10px 8px; }
-            .room-setting-box { padding: 14px 6px 10px 6px; }
+            .room-main {
+                padding: 0;
+                min-width: unset;
+                max-width: 98vw;
+            }
+            .room-header, .room-body, .room-footer {
+                padding: 18px 8px 0 8px;
+            }
+            .room-title {
+                font-size: 1.3rem;
+            }
+            .room-people {
+                margin-top: 10px;
+            }
         }
     </style>
 </head>
 <body>
-<div class="room-main">
-    <div class="room-header">
-        <div>
-            <div class="room-title" id="roomName">房間名稱</div>
-            <div class="room-code-box mt-2">
-                <span class="room-code-label">房間代碼：</span>
-                <span class="room-code-value" id="roomCode">------</span>
-                <button class="btn btn-copy" id="btnCopyCode"><i class="fas fa-copy me-1"></i>複製代碼</button>
+<div class="container-fluid min-vh-100 d-flex align-items-center justify-content-center">
+    <div class="room-main w-100">
+        <!-- Header: 左上角/右上角 -->
+        <div class="room-header">
+            <div>
+                <div class="room-title" id="roomName"><?php echo htmlspecialchars($room['room_name'] ?: '未命名房間'); ?></div>
+                <div class="room-code-row mb-2">
+                    <span class="room-code-label">房間代碼：</span>
+                    <span id="roomCode" style="font-weight:bold;font-size:1.2rem;"><?php echo htmlspecialchars($room['invite_code']); ?></span>
+                    <button id="btnCopyCode" class="btn btn-primary btn-sm ms-2">複製代碼</button>
+                </div>
+            </div>
+            <div class="d-flex flex-column align-items-end">
+                <div class="room-count" style="background:#232526;border-radius:8px;padding:6px 18px;font-weight:bold;font-size:1.1rem;color:#fff;">
+                    目前人數 <?php echo $member_count; ?> / <?php echo intval($room['max_members']); ?>
+                </div>
+                <?php if (!empty($room['dungeon_name'])): ?>
+                    <div class="room-dungeon-name" style="margin-top:8px;background:#ff2d2d;border-radius:8px;padding:6px 18px;font-size:1.05rem;color:#fff;font-weight:bold;min-width:120px;text-align:center;">
+                        當前副本：<?php echo htmlspecialchars($room['dungeon_name']); ?>
+                    </div>
+                <?php endif; ?>
             </div>
         </div>
-        <div class="room-count-box mt-3 mt-md-0" id="roomCountBox">
-            目前人數 <span id="memberCount" style="color:#4a90e2;">0/4</span>
-        </div>
-    </div>
-    <hr style="border-color:#333;">
-    <div>
-        <div class="room-section-title">房間成員</div>
-        <div id="memberList" class="member-list"></div>
-    </div>
-    <hr style="border-color:#333;">
-    <div class="room-section-title">房間設定</div>
-    <div class="room-setting-box">
-        <div class="form-check mb-2">
-            <input class="form-check-input" type="checkbox" id="privateRoom" disabled>
-            <label class="form-check-label" for="privateRoom">私人房間</label>
-        </div>
-        <input type="text" class="form-control" id="roomPassword" placeholder="密碼" readonly>
-    </div>
-    <div class="d-flex justify-content-end mt-4 gap-2">
-        <button id="btnSetting" class="btn btn-setting d-none"><i class="fas fa-gear"></i> 房間設定</button>
-        <button id="btnDisband" class="btn btn-disband d-none"><i class="fas fa-trash"></i> 解散房間</button>
-        <button id="btnStartBattle" class="btn btn-battle">
-            <i class="fas fa-fire me-1"></i> 戰鬥開始
-        </button>
-    </div>
-    <a href="index.php" class="btn btn-outline-light mt-4"><i class="fas fa-arrow-left me-1"></i> 返回大廳</a>
-</div>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.2.1/js/all.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-<script>
-const firebaseConfig = {
-  apiKey: "AIzaSyCCLkT0VSweTF1-w_ecMybR7WdnvHs0oKA",
-  authDomain: "openai-dbd3b.firebaseapp.com",
-  databaseURL: "https://openai-dbd3b-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "openai-dbd3b",
-  storageBucket: "openai-dbd3b.appspot.com",
-  messagingSenderId: "977828405782",
-  appId: "1:977828405782:web:eeb71ec2d11c7edfa10b37",
-  measurementId: "G-Y5DJ7B9LXM"
-};
-firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
-
-function getQuery(name) {
-    const url = new URL(window.location.href);
-    return url.searchParams.get(name);
-}
-
-const code = getQuery('code');
-const currentUser = <?php echo json_encode($username); ?>;
-let roomOwner = null;
-let maxPlayers = 4;
-
-// 複製房間代碼
-document.getElementById('btnCopyCode').onclick = function() {
-    navigator.clipboard.writeText(code);
-    Swal.fire({
-        icon: 'success',
-        title: '已複製房間代碼',
-        html: `<b>${code}</b>`,
-        timer: 1200,
-        showConfirmButton: false
-    });
-};
-
-// 取得房間資訊與成員
-db.ref('rooms/' + code).on('value', snap => {
-    const room = snap.val();
-    if (!room) {
-        Swal.fire({
-            icon: 'error',
-            title: '房間不存在或已被刪除',
-            confirmButtonText: '返回大廳'
-        }).then(() => {
-            location.href = 'index.php';
-        });
-        return;
-    }
-    document.getElementById('roomName').textContent = room.name || '未命名房間';
-    document.getElementById('roomCode').textContent = code;
-    document.getElementById('privateRoom').checked = !!room.private;
-    document.getElementById('roomPassword').value = room.password || '';
-    maxPlayers = room.max_players || 4;
-
-    // 修正房主取得方式
-    // 如果 room.owner 沒有，預設第一位成員為房主
-    let members = room.members ? Object.keys(room.members) : [];
-    roomOwner = room.owner;
-    if (!roomOwner && members.length > 0) {
-        roomOwner = members[0];
-    }
-
-    document.getElementById('memberCount').textContent = `${members.length}/${maxPlayers}`;
-
-    // 房主顯示設定按鈕和解散按鈕
-    if (roomOwner === currentUser) {
-        document.getElementById('btnSetting').classList.remove('d-none');
-        document.getElementById('btnDisband').classList.remove('d-none');
-    } else {
-        document.getElementById('btnSetting').classList.add('d-none');
-        document.getElementById('btnDisband').classList.add('d-none');
-    }
-
-    // 成員
-    let html = '';
-    members.forEach(name => {
-        html += `<div class="member-card">
-            <span class="member-info">
-                ${roomOwner === name
-                    ? '<i class="fi fi-br-home" title="房主"></i>'
-                    : '<i class="fi fi-br-user member-icon" title="成員"></i>'
-                }
-                ${name}
-            </span>
-            ${
-                (roomOwner === currentUser && name !== currentUser)
-                ? `<button class="btn btn-kick btn-sm" onclick="kickMember('${name}')">踢出</button>`
-                : ''
-            }
-        </div>`;
-    });
-    document.getElementById('memberList').innerHTML = html || '<div class="text-light">暫無成員</div>';
-});
-
-// 踢出成員
-function kickMember(name) {
-    Swal.fire({
-        title: `確定要將 ${name} 踢出房間嗎？`,
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonText: '踢出',
-        cancelButtonText: '取消'
-    }).then(result => {
-        if (result.isConfirmed) {
-            db.ref('rooms/' + code + '/members/' + name).remove();
-        }
-    });
-}
-
-// 解散房間
-document.getElementById('btnDisband').onclick = function() {
-    Swal.fire({
-        title: '確定要解散這個房間嗎？',
-        text: '所有成員都會被移除，房間將永久刪除！',
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonText: '解散',
-        cancelButtonText: '取消'
-    }).then(result => {
-        if (result.isConfirmed) {
-            db.ref('rooms/' + code).remove().then(() => {
-                Swal.fire({icon:'success', title:'房間已解散'}).then(() => {
-                    window.location.href = 'index.php';
-                });
-            });
-        }
-    });
-};
-
-// 房間設定（房主可切換公開/私人與密碼）
-document.getElementById('btnSetting').onclick = function() {
-    db.ref('rooms/' + code).once('value').then(snap => {
-        const room = snap.val();
-        Swal.fire({
-            title: '房間設定',
-            html:
-                `<div class="form-check mb-2" style="text-align:left;">
-                    <input class="form-check-input" type="checkbox" id="swal-private" ${room.private ? 'checked' : ''}>
-                    <label class="form-check-label" for="swal-private">私人房間</label>
+        <!-- Body: 中間/下方 -->
+        <div class="room-body">
+            <div class="room-member-title">房間成員</div>
+            <div class="member-list" id="memberList">
+                <?php foreach ($members as $m): ?>
+                    <div class="member-card">
+                        <span class="member-info">
+                            <?php if ($room_owner_id == $m['user_id']): ?>
+                                <span class="badge-owner">房主</span>
+                            <?php endif; ?>
+                            <?php echo htmlspecialchars($m['username']); ?>
+                        </span>
+                        <?php if ($room_owner_id == $user_id && $m['user_id'] != $room_owner_id): ?>
+                            <form method="post" style="display:inline;">
+                                <input type="hidden" name="kick_user_id" value="<?php echo $m['user_id']; ?>">
+                                <button type="submit" class="btn btn-kick btn-sm">踢除</button>
+                            </form>
+                            <form method="post" style="display:inline;">
+                                <input type="hidden" name="transfer_owner_id" value="<?php echo $m['user_id']; ?>">
+                                <button type="submit" class="btn btn-transfer btn-sm">轉讓房主</button>
+                            </form>
+                        <?php endif; ?>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+            <div class="room-setting-title">房間設定</div>
+            <?php if ($user_id == $room_owner_id): ?>
+                <form method="post" class="room-setting-row">
+                    <div class="form-check mb-0">
+                        <input class="form-check-input" type="checkbox" id="privateRoom" name="private_room" <?php echo $room['is_public'] ? '' : 'checked'; ?>>
+                        <label class="form-check-label" for="privateRoom">私人房間</label>
+                    </div>
+                    <input type="text" class="form-control" name="room_password" placeholder="密碼" value="<?php echo htmlspecialchars($room['room_password'] ?? ''); ?>" style="width:180px;" <?php echo $room['is_public'] ? 'disabled' : ''; ?>>
+                    <button type="submit" name="update_setting" class="btn btn-setting btn-info">儲存設定</button>
+                </form>
+            <?php else: ?>
+                <div class="form-check mb-2">
+                    <input class="form-check-input" type="checkbox" id="privateRoom" disabled <?php echo $room['is_public'] ? '' : 'checked'; ?>>
+                    <label class="form-check-label" for="privateRoom">私人房間</label>
                 </div>
-                <input id="swal-password" class="swal2-input" placeholder="密碼" value="${room.password || ''}" ${room.private ? '' : 'disabled'}>`,
-            focusConfirm: false,
-            preConfirm: () => {
-                const isPrivate = document.getElementById('swal-private').checked;
-                const password = document.getElementById('swal-password').value.trim();
-                if (isPrivate && !password) {
-                    Swal.showValidationMessage('私人房間需填寫密碼');
-                    return false;
-                }
-                return { isPrivate, password };
-            },
-            didOpen: () => {
-                // 這裡要用 input event 或 change event
-                document.getElementById('swal-private').addEventListener('change', function() {
-                    const pwdInput = document.getElementById('swal-password');
-                    pwdInput.disabled = !this.checked;
-                    if (!this.checked) pwdInput.value = '';
-                });
-            },
-            confirmButtonText: '儲存',
-            showCancelButton: true
-        }).then(result => {
-            if (!result.isConfirmed || !result.value) return;
-            db.ref('rooms/' + code).update({
-                private: result.value.isPrivate,
-                password: result.value.isPrivate ? result.value.password : ""
-            }).then(() => {
-                Swal.fire({icon:'success', title:'房間設定已更新'});
-            });
-        });
-    });
+                <input type="text" class="form-control mb-2" name="room_password" placeholder="密碼" value="<?php echo htmlspecialchars($room['room_password'] ?? ''); ?>" style="width:180px;" disabled>
+            <?php endif; ?>
+        </div>
+        <!-- Footer: 左下角/右下角 -->
+        <div class="room-footer">
+            <a href="room_list.php" class="btn btn-outline-light">&larr; 返回房間列表</a>
+            <button type="button" class="btn btn-battle" onclick="startBattle()">&#9889; 開始遊戲</button>
+        </div>
+    </div>
+</div>
+<script>
+document.getElementById('btnCopyCode').onclick = function() {
+    const code = document.getElementById('roomCode').textContent;
+    navigator.clipboard.writeText(code);
+    alert('已複製房間代碼: ' + code);
 };
-
-// 戰鬥開始按鈕
-document.getElementById('btnStartBattle').onclick = function() {
-    window.location.href = 'battle_multi.html?code=' + encodeURIComponent(code);
-};
+document.getElementById('privateRoom')?.addEventListener('change', function() {
+    document.querySelector('input[name="room_password"]').disabled = !this.checked;
+    if (!this.checked) document.querySelector('input[name="room_password"]').value = '';
+});
+// 房間密碼複製
+const pwdBox = document.getElementById('roomPasswordBox');
+if (pwdBox) {
+    pwdBox.onclick = function() {
+        const pwd = document.getElementById('roomPasswordText').textContent;
+        navigator.clipboard.writeText(pwd);
+        const copied = document.getElementById('pwdCopied');
+        if (copied) {
+            copied.style.display = 'block';
+            setTimeout(() => { copied.style.display = 'none'; }, 1200);
+        }
+    }
+}
+function startBattle() {
+    window.location.href = "battle_multi.php?code=" + encodeURIComponent(document.getElementById('roomCode').textContent);
+}
 </script>
-</body>
-</html>
