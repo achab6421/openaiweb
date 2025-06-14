@@ -277,6 +277,7 @@ function submitCode() {
                 outputDisplay.classList.remove('error');
                 // 答案正確，進行玩家攻擊
                 playerAttack();
+                // 注意：玩家攻擊函數內部會處理後續的重新生成題目邏輯
             } else {
                 outputDisplay.classList.add('error');
                 // 答案錯誤，進行怪物攻擊
@@ -340,7 +341,7 @@ function playerAttack() {
             return;
         }
         
-        // 使用 playerAttack 而非 playerAttackPower (修正這裡)
+        // 計算傷害 - 使用玩家攻擊力
         const playerAttack = parseInt(levelData.playerAttack) || 10;
         const damage = calculateDamage(playerAttack);
         battleState.monsterHp -= damage;
@@ -355,7 +356,6 @@ function playerAttack() {
         
         // 檢查怪物是否死亡
         if (battleState.monsterHp <= 0) {
-            console.log('怪物被擊敗！');
             // 檢查是否有下一波
             if (battleState.wave < battleState.maxWaves) {
                 nextWave();
@@ -364,15 +364,34 @@ function playerAttack() {
                 endBattle(true);
             }
         } else {
-            // 怪物還活著，換怪物回合
-            battleState.isPlayerTurn = false;
-            setTimeout(monsterAttack, 1500); // 延遲1.5秒後怪物攻擊
+            // ===== 關鍵修改：答對後不是輪到怪物，而是重新生成題目 =====
+            // 將 battleState.isPlayerTurn = false; 和 setTimeout(monsterAttack, 1500); 移除
+            
+            // 答對後重新生成題目
+            setTimeout(() => {
+                regenerateProblem();
+            }, 1500); // 延遲1.5秒後重新生成題目
         }
     } catch (error) {
         console.error('玩家攻擊過程中發生錯誤:', error);
         // 嘗試恢復遊戲狀態
         battleState.isPlayerTurn = true;
     }
+}
+
+// 新增：重新生成題目的函數
+function regenerateProblem() {
+    // 顯示載入提示
+    const outputDisplay = document.getElementById('output-display');
+    if (outputDisplay) {
+        outputDisplay.innerHTML = '<div class="loading">正在生成新的挑戰...</div>';
+        outputDisplay.classList.remove('error');
+    }
+    
+    updateBattleMessage('怪物防禦了你的攻擊！正在生成新的挑戰...');
+    
+    // 調用 loadProblem 函數重新生成題目
+    loadProblem();
 }
 
 // 怪物攻擊
@@ -730,7 +749,7 @@ function showDefeatEffect() {
     }
 }
 
-// 修改 endBattle 函數，增加更多錯誤處理
+// 修改 endBattle 函數，顯示更美觀的狩獵成功畫面
 function endBattle(isVictory) {
     try {
         console.log(`戰鬥結束，結果: ${isVictory ? '勝利' : '失敗'}`);
@@ -745,8 +764,8 @@ function endBattle(isVictory) {
         
         // 顯示效果
         if (isVictory) {
-            // 顯示勝利效果 (有錯誤處理)
-            showVictoryEffect();
+            // 顯示狩獵成功畫面
+            showHuntSuccessScreen();
             
             // 記錄關卡完成並解鎖下一關
             try {
@@ -759,19 +778,6 @@ function endBattle(isVictory) {
             showDefeatEffect();
         }
         
-        // 顯示結果彈窗
-        try {
-            showResultModal(isVictory);
-        } catch (modalError) {
-            console.warn('顯示結果彈窗時出錯:', modalError);
-            
-            // 如果無法顯示模態窗口，至少顯示重試按鈕
-            const retryButton = document.getElementById('retry-button');
-            if (retryButton) {
-                retryButton.style.display = 'inline-block';
-            }
-        }
-        
         // 禁用提交按鈕
         const submitButton = document.getElementById('submit-code');
         if (submitButton) {
@@ -779,6 +785,121 @@ function endBattle(isVictory) {
         }
     } catch (error) {
         console.error('結束戰鬥過程中發生錯誤:', error);
+    }
+}
+
+// 新增狩獵成功畫面
+function showHuntSuccessScreen() {
+    try {
+        // 創建遮罩背景
+        const overlay = document.createElement('div');
+        overlay.className = 'hunt-success-overlay';
+        
+        // 創建成功畫面容器
+        const successScreen = document.createElement('div');
+        successScreen.className = 'hunt-success-container';
+        
+        // 獲取怪物名稱（如果有）或使用默認名稱
+        const monsterName = levelData.monsterName || '野生怪物';
+        
+        // 添加標題和內容
+        successScreen.innerHTML = `
+            <div class="hunt-success-header">
+                <div class="hunt-header-decoration">
+                    <span class="hunt-decoration-symbol">⚔️</span>
+                    <span class="hunt-decoration-line"></span>
+                    <span class="hunt-decoration-symbol">🏹</span>
+                </div>
+                <h2>狩獵成功</h2>
+                <div class="hunt-header-decoration">
+                    <span class="hunt-decoration-line"></span>
+                </div>
+            </div>
+            <div class="hunt-success-content">
+                <div class="hunt-monster-defeated">
+                    <div class="monster-trophy">🏆</div>
+                    <div class="defeat-text">你成功擊倒了 ${monsterName}！</div>
+                </div>
+                
+                <div class="hunt-rewards-title">戰利品</div>
+                <div class="hunt-rewards">
+                    <div class="reward-item exp-reward">
+                        <span class="reward-icon">✨</span>
+                        <span class="reward-label">經驗值</span>
+                        <span class="reward-value">+${levelData.expReward || 50}</span>
+                    </div>
+                    <div class="reward-item monster-part">
+                        <span class="reward-icon">🦴</span>
+                        <span class="reward-label">怪物碎片</span>
+                        <span class="reward-value">+${levelData.isBoss ? 3 : 1}</span>
+                    </div>
+                </div>
+                
+                <div class="hunter-notes">
+                    <div class="note-title">探險筆記</div>
+                    <div class="note-content">
+                        <p>完成了程式設計挑戰，將代碼的力量應用到狩獵中！</p>
+                        <p>狩獵等級越高，能夠挑戰更強大的怪物。</p>
+                    </div>
+                </div>
+            </div>
+            <div class="hunt-success-buttons">
+                <button class="hunt-success-btn return-btn">
+                    <span class="btn-icon">🗺️</span> 返回狩獵地圖
+                </button>
+                <button class="hunt-success-btn retry-btn">
+                    <span class="btn-icon">🔄</span> 再次狩獵
+                </button>
+            </div>
+        `;
+        
+        // 添加到頁面
+        overlay.appendChild(successScreen);
+        document.body.appendChild(overlay);
+        
+        // 淡入動畫效果
+        setTimeout(() => {
+            overlay.style.opacity = '1';
+            successScreen.style.transform = 'translateY(0)';
+        }, 10);
+        
+        // 添加按鈕事件
+        const returnBtn = successScreen.querySelector('.return-btn');
+        if (returnBtn) {
+            returnBtn.addEventListener('click', () => {
+                // 返回章節頁面
+                window.location.href = `chapter.php?id=${levelData.chapterId || 1}`;
+            });
+        }
+        
+        const retryBtn = successScreen.querySelector('.retry-btn');
+        if (retryBtn) {
+            retryBtn.addEventListener('click', () => {
+                // 移除成功畫面
+                overlay.style.opacity = '0';
+                successScreen.style.transform = 'translateY(20px)';
+                
+                setTimeout(() => {
+                    if (overlay.parentNode) {
+                        overlay.parentNode.removeChild(overlay);
+                    }
+                    // 重新載入頁面以重新開始
+                    window.location.reload();
+                }, 300);
+            });
+        }
+        
+        // 播放勝利音效（如果有）
+        try {
+            playSound('victory');
+        } catch (soundError) {
+            console.log('無法播放勝利音效');
+        }
+        
+    } catch (error) {
+        console.error('顯示狩獵成功畫面時出錯:', error);
+        // 如果出錯，回退到簡單的勝利效果
+        showVictoryEffect();
     }
 }
 
@@ -1144,6 +1265,176 @@ function addCssStyles() {
         
         .exp-notice {
             animation-fill-mode: both;
+        }
+        
+        /* 新增狩獵成功畫面的樣式 */
+        .hunt-success-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            transition: opacity 0.5s ease;
+            z-index: 10000;
+        }
+        
+        .hunt-success-container {
+            background: #fff;
+            border-radius: 12px;
+            padding: 20px;
+            max-width: 400px;
+            width: 90%;
+            text-align: center;
+            transform: translateY(20px);
+            transition: transform 0.5s ease;
+        }
+        
+        .hunt-success-header h2 {
+            margin: 0;
+            font-size: 28px;
+            color: #4caf50;
+        }
+        
+        .hunt-success-animation {
+            font-size: 48px;
+            margin: 10px 0;
+        }
+        
+        .hunt-success-content {
+            margin: 20px 0;
+        }
+        
+        .reward-item {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 10px 0;
+        }
+        
+        .reward-icon {
+            font-size: 24px;
+            margin-right: 8px;
+        }
+        
+        .hunt-success-buttons {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 20px;
+        }
+        
+        .hunt-success-btn {
+            background: #4caf50;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 10px 20px;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+        
+        .hunt-success-btn:hover {
+            background: #45a049;
+        }
+        
+        /* 新增狩獵成功畫面的裝飾樣式 */
+        .hunt-header-decoration {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .hunt-decoration-symbol {
+            font-size: 28px;
+            color: #4caf50;
+            margin: 0 5px;
+        }
+        
+        .hunt-decoration-line {
+            flex-grow: 1;
+            height: 2px;
+            background: linear-gradient(to right, transparent, #4caf50, transparent);
+            margin: 0 5px;
+        }
+        
+        .hunt-monster-defeated {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+            margin-bottom: 20px;
+        }
+        
+        .monster-trophy {
+            font-size: 48px;
+            color: #ffd700;
+            margin-bottom: 10px;
+        }
+        
+        .defeat-text {
+            font-size: 20px;
+            color: #333;
+            font-weight: bold;
+        }
+        
+        .hunt-rewards-title {
+            font-size: 22px;
+            color: #4caf50;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+        
+        .hunt-rewards {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+        
+        .reward-item {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 5px 0;
+            width: 100%;
+        }
+        
+        .reward-label {
+            font-size: 18px;
+            color: #333;
+            margin-right: 5px;
+        }
+        
+        .reward-value {
+            font-size: 18px;
+            color: #4caf50;
+            font-weight: bold;
+        }
+        
+        .hunter-notes {
+            margin-top: 15px;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            text-align: left;
+        }
+        
+        .note-title {
+            font-size: 18px;
+            color: #333;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .note-content {
+            font-size: 16px;
+            color: #666;
+            line-height: 1.4;
         }
     `;
     document.head.appendChild(styleElement);
