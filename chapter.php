@@ -342,3 +342,143 @@ try {
     <script src="assets/js/quest.js"></script>
 </body>
 </html>
+
+<!-- 添加CSS樣式 -->
+<style>
+    .chapter-page {
+        padding: 20px 0;
+    }
+    
+    .chapter-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+    
+    .chapter-navigation {
+        display: flex;
+        gap: 10px;
+    }
+    
+    .nav-button {
+        padding: 8px 15px;
+        background-color: #4a5568;
+        color: white;
+        text-decoration: none;
+        border-radius: 5px;
+        transition: background-color 0.3s;
+    }
+    
+    .nav-button:hover {
+        background-color: #2d3748;
+    }
+    
+    .chapter-info {
+        background-color: #f8f9fa;
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 30px;
+    }
+    
+    .level-list {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 20px;
+    }
+    
+    .level-item {
+        background-color: #fff;
+        border-radius: 10px;
+        overflow: hidden;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        transition: transform 0.3s, box-shadow 0.3s;
+    }
+    
+    .level-item.completed {
+        border-left: 5px solid #48bb78; /* 綠色邊框表示已完成 */
+    }
+    
+    .level-item.current {
+        border-left: 5px solid #4299e1; /* 藍色邊框表示當前關卡 */
+    }
+    
+    .level-item.locked {
+        border-left: 5px solid #a0aec0; /* 灰色邊框表示未解鎖 */
+        opacity: 0.7;
+    }
+    
+    .level-item:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+    }
+    
+    .level-link {
+        display: block;
+        text-decoration: none;
+        color: inherit;
+    }
+    
+    .level-icon {
+        font-size: 24px;
+        color: #4a5568;
+        margin-right: 15px;
+    }
+    
+    .level-item.completed .level-icon {
+        color: #48bb78; /* 綠色圖標表示已完成 */
+    }
+    
+    .level-item.current .level-icon {
+        color: #4299e1; /* 藍色圖標表示當前關卡 */
+    }
+    
+    .level-details {
+        padding: 15px;
+    }
+    
+    .level-title {
+        font-size: 18px;
+        font-weight: bold;
+        margin-bottom: 10px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .boss-tag {
+        background-color: #e53e3e;
+        color: white;
+        font-size: 12px;
+        padding: 3px 8px;
+        border-radius: 10px;
+    }
+    
+    .boss-level {
+        border: 2px solid #e53e3e;
+        box-shadow: 0 0 15px rgba(229, 62, 62, 0.3);
+    }
+    
+    .level-stats {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        margin-bottom: 10px;
+        font-size: 14px;
+        color: #718096;
+    }
+    
+    .level-desc {
+        font-size: 14px;
+        color: #4a5568;
+    }
+    
+    .no-levels {
+        text-align: center;
+        padding: 30px;
+        background-color: #f8f9fa;
+        border-radius: 10px;
+        font-style: italic;
+        color: #718096;
+    }
+</style>

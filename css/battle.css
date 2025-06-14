@@ -148,6 +148,106 @@
     opacity: 0.9;
 }
 
+/* 經驗值相關樣式 */
+.exp-progress-container {
+    width: 100%;
+    height: 15px;
+    background-color: #333;
+    border-radius: 10px;
+    overflow: hidden;
+    margin: 10px 0;
+}
+
+.exp-progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #4fc3f7 0%, #2196f3 100%);
+    width: 0%;
+    transition: width 1s ease;
+}
+
+.exp-reward {
+    display: flex;
+    align-items: center;
+    margin: 10px 0;
+}
+
+.exp-icon {
+    width: 24px;
+    height: 24px;
+    background-color: #ffeb3b;
+    border-radius: 50%;
+    margin-right: 10px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-weight: bold;
+    color: #333;
+}
+
+/* 升級效果 */
+.level-up-effect {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(circle, rgba(255,215,0,0.3) 0%, rgba(0,0,0,0.7) 100%);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+    animation: levelUpBg 2s ease infinite;
+}
+
+.level-up-content {
+    background-color: rgba(0,0,0,0.8);
+    padding: 30px;
+    border-radius: 15px;
+    text-align: center;
+    border: 3px solid #ffd700;
+    box-shadow: 0 0 30px #ffd700;
+}
+
+.level-up-title {
+    font-size: 48px;
+    color: #ffd700;
+    font-weight: bold;
+    margin-bottom: 15px;
+    text-shadow: 0 0 10px #ffc107;
+}
+
+.level-up-info {
+    font-size: 24px;
+    color: white;
+}
+
+.level-up-benefits {
+    color: #77dd77;
+    margin-top: 20px;
+}
+
+.stat-increase {
+    display: flex;
+    justify-content: space-around;
+    margin-top: 15px;
+}
+
+.stat-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.stat-icon {
+    font-size: 24px;
+    margin-bottom: 5px;
+}
+
+.stat-value {
+    color: #ff9800;
+    font-weight: bold;
+}
+
 /* 動畫 */
 @keyframes fadeInOut {
     0% { opacity: 0; }
@@ -180,4 +280,10 @@
 @keyframes slideIn {
     from { transform: translate(-50%, -70%); opacity: 0; }
     to { transform: translate(-50%, -50%); opacity: 1; }
+}
+
+@keyframes levelUpBg {
+    0% { background-color: rgba(255,215,0,0.1); }
+    50% { background-color: rgba(255,215,0,0.3); }
+    100% { background-color: rgba(255,215,0,0.1); }
 }

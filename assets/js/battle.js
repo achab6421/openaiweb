@@ -912,3 +912,245 @@ function renderMarkdown(markdown) {
     
     return html;
 }
+
+// 記錄關卡完成並處理經驗值和升級
+function recordLevelCompletion() {
+    fetch('api/complete-level.php', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Requested-With': 'XMLHttpRequest'
+        },
+        body: JSON.stringify({
+            levelId: levelData.levelId,
+            chapterId: levelData.chapterId || 1
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log('關卡完成記錄結果:', data);
+        
+        if (data.success) {
+            // 如果解鎖了新關卡，顯示解鎖訊息
+            if (data.unlockedLevels && data.unlockedLevels.length > 0) {
+                showUnlockNotification(data.unlockedLevels);
+            }
+            
+            // 如果完成了整個章節，顯示章節完成訊息
+            if (data.completedChapter) {
+                showChapterCompleteNotification(data.completedChapter);
+            }
+            
+            // 顯示獲得經驗值
+            if (data.expReward) {
+                showExpReward(data.expReward);
+            }
+            
+            // 如果升級了，顯示升級訊息
+            if (data.levelUp) {
+                showLevelUpNotification(data.newLevel);
+            }
+            
+            // 更新結果模態窗口的經驗值顯示
+            updateResultModalExp(data.expReward, data.currentExp, data.expToNextLevel);
+            
+            // 如果升級了，更新玩家數據
+            if (data.levelUp) {
+                updatePlayerStats(data.newLevel);
+            }
+        }
+    })
+    .catch(error => {
+        console.error('記錄關卡完成時發生錯誤:', error);
+    });
+}
+
+// 顯示獲得的經驗值
+function showExpReward(expAmount) {
+    try {
+        // 建立經驗值獲得提示元素
+        const expNotice = document.createElement('div');
+        expNotice.className = 'exp-notice';
+        expNotice.style.position = 'fixed';
+        expNotice.style.bottom = '30px';
+        expNotice.style.left = '50%';
+        expNotice.style.transform = 'translateX(-50%)';
+        expNotice.style.background = 'rgba(65, 105, 225, 0.8)';
+        expNotice.style.color = 'white';
+        expNotice.style.padding = '15px 25px';
+        expNotice.style.borderRadius = '10px';
+        expNotice.style.fontWeight = 'bold';
+        expNotice.style.boxShadow = '0 0 10px rgba(0,0,0,0.2)';
+        expNotice.style.zIndex = '1000';
+        expNotice.style.animation = 'fadeInUp 0.5s ease-out';
+        
+        expNotice.textContent = `+ ${expAmount} 經驗值！`;
+        document.body.appendChild(expNotice);
+        
+        // 3秒後移除
+        setTimeout(() => {
+            if (expNotice.parentNode) {
+                expNotice.style.animation = 'fadeOut 0.5s ease-out';
+                setTimeout(() => expNotice.remove(), 500);
+            }
+        }, 3000);
+    } catch (error) {
+        console.error('顯示經驗值獎勵時發生錯誤:', error);
+    }
+}
+
+// 顯示升級通知
+function showLevelUpNotification(newLevel) {
+    try {
+        // 建立升級通知元素
+        const levelUpEffect = document.createElement('div');
+        levelUpEffect.className = 'level-up-effect';
+        levelUpEffect.style.position = 'fixed';
+        levelUpEffect.style.top = '0';
+        levelUpEffect.style.left = '0';
+        levelUpEffect.style.width = '100%';
+        levelUpEffect.style.height = '100%';
+        levelUpEffect.style.backgroundColor = 'rgba(255, 215, 0, 0.3)';
+        levelUpEffect.style.display = 'flex';
+        levelUpEffect.style.justifyContent = 'center';
+        levelUpEffect.style.alignItems = 'center';
+        levelUpEffect.style.zIndex = '9999';
+        levelUpEffect.style.animation = 'fadeIn 0.5s ease-out';
+        
+        const levelUpContent = document.createElement('div');
+        levelUpContent.style.textAlign = 'center';
+        levelUpContent.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+        levelUpContent.style.padding = '30px';
+        levelUpContent.style.borderRadius = '15px';
+        levelUpContent.style.animation = 'scaleIn 0.5s ease-out';
+        
+        const levelUpTitle = document.createElement('div');
+        levelUpTitle.textContent = '升級！';
+        levelUpTitle.style.fontSize = '48px';
+        levelUpTitle.style.color = '#ffd700';
+        levelUpTitle.style.fontWeight = 'bold';
+        levelUpTitle.style.marginBottom = '10px';
+        levelUpTitle.style.textShadow = '2px 2px 4px rgba(0,0,0,0.5)';
+        
+        const levelUpInfo = document.createElement('div');
+        levelUpInfo.textContent = `你現在是等級 ${newLevel} 了！`;
+        levelUpInfo.style.color = 'white';
+        levelUpInfo.style.fontSize = '24px';
+        
+        const levelUpBenefits = document.createElement('div');
+        levelUpBenefits.innerHTML = '攻擊力和生命值提高了！';
+        levelUpBenefits.style.color = '#77dd77';
+        levelUpBenefits.style.fontSize = '18px';
+        levelUpBenefits.style.marginTop = '15px';
+        
+        // 組合元素
+        levelUpContent.appendChild(levelUpTitle);
+        levelUpContent.appendChild(levelUpInfo);
+        levelUpContent.appendChild(levelUpBenefits);
+        levelUpEffect.appendChild(levelUpContent);
+        document.body.appendChild(levelUpEffect);
+        
+        // 播放升級音效
+        try {
+            playSound('levelUp');
+        } catch (e) {
+            console.log('播放升級音效失敗');
+        }
+        
+        // 4秒後移除
+        setTimeout(() => {
+            levelUpEffect.style.animation = 'fadeOut 0.5s ease-out';
+            setTimeout(() => levelUpEffect.remove(), 500);
+        }, 4000);
+    } catch (error) {
+        console.error('顯示升級通知時發生錯誤:', error);
+    }
+}
+
+// 更新結果模態窗口的經驗值顯示
+function updateResultModalExp(expReward, currentExp, expToNextLevel) {
+    try {
+        const expGainElement = document.getElementById('exp-gain');
+        if (expGainElement) {
+            expGainElement.textContent = expReward;
+        }
+        
+        // 如果模態窗口有經驗條，也更新它
+        const expBarElement = document.getElementById('exp-progress');
+        if (expBarElement) {
+            const expPercent = (currentExp / expToNextLevel) * 100;
+            expBarElement.style.width = `${expPercent}%`;
+            
+            const expTextElement = document.getElementById('exp-text');
+            if (expTextElement) {
+                expTextElement.textContent = `${currentExp}/${expToNextLevel}`;
+            }
+        }
+    } catch (error) {
+        console.error('更新經驗值顯示時發生錯誤:', error);
+    }
+}
+
+// 更新玩家屬性顯示
+function updatePlayerStats(newLevel) {
+    try {
+        // 更新等級顯示
+        const levelElements = document.querySelectorAll('.level-value, .level-display, .player-level');
+        levelElements.forEach(element => {
+            if (element) element.textContent = newLevel;
+        });
+        
+        // 可能還需要更新攻擊力和HP顯示，如果UI中有這些元素
+    } catch (error) {
+        console.error('更新玩家屬性顯示時發生錯誤:', error);
+    }
+}
+
+// 添加 CSS 樣式
+function addCssStyles() {
+    const styleElement = document.createElement('style');
+    styleElement.textContent = `
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        @keyframes fadeOut {
+            from { opacity: 1; }
+            to { opacity: 0; }
+        }
+        
+        @keyframes fadeInUp {
+            from { 
+                opacity: 0;
+                transform: translate(-50%, 20px);
+            }
+            to { 
+                opacity: 1;
+                transform: translate(-50%, 0);
+            }
+        }
+        
+        @keyframes scaleIn {
+            from { 
+                transform: scale(0.8);
+                opacity: 0;
+            }
+            to { 
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+        
+        .exp-notice {
+            animation-fill-mode: both;
+        }
+    `;
+    document.head.appendChild(styleElement);
+}
+
+// 在頁面載入完成後添加 CSS 樣式
+document.addEventListener('DOMContentLoaded', function() {
+    addCssStyles();
+    // ...existing code...
+});

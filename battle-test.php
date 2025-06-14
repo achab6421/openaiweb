@@ -1,568 +1,620 @@
 <?php
-// 模擬會話狀態
+// 戰鬥機制測試頁面
 session_start();
-$_SESSION['logged_in'] = true;
-$_SESSION['user_id'] = 'test_user';
-$_SESSION['username'] = '測試玩家';
-$_SESSION['level'] = 5;
+
+// 確保用戶已登入，並使用有效的數字ID
+if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
+    $_SESSION['logged_in'] = true;
+    $_SESSION['user_id'] = 1; // 使用數字ID而非文本
+    $_SESSION['username'] = '測試玩家';
+    $_SESSION['level'] = 1;
+    $_SESSION['attack_power'] = 10;
+    $_SESSION['base_hp'] = 100;
+}
+
+// 確保用戶ID是數字
+if (!is_numeric($_SESSION['user_id'])) {
+    $_SESSION['user_id'] = 1;
+}
+
+// 設置頁面標題
+$pageTitle = "戰鬥系統測試";
+
+// 模擬關卡數據
+$levelData = [
+    'levelId' => 1,
+    'chapterId' => 1,
+    'monsterHp' => 100,
+    'monsterAttack' => 15,
+    'playerHp' => $_SESSION['base_hp'],
+    'playerAttack' => $_SESSION['attack_power'],
+    'waveCount' => 2,
+    'expReward' => 50,
+    'isBoss' => false,
+    'teachingPoint' => '測試教學點'
+];
+
+// 確保測試用戶存在於數據庫
+require_once 'config/database.php';
+$database = new Database();
+$db = $database->getConnection();
+
+try {
+    // 檢查測試用戶是否存在
+    $checkUserQuery = "SELECT * FROM players WHERE player_id = ?";
+    $checkUserStmt = $db->prepare($checkUserQuery);
+    $checkUserStmt->execute([$_SESSION['user_id']]);
+    
+    if ($checkUserStmt->rowCount() == 0) {
+        // 創建測試用戶
+        $createUserQuery = "INSERT INTO players (player_id, username, account, password, attack_power, base_hp, level) 
+                          VALUES (?, ?, ?, ?, ?, ?, ?)";
+        $createUserStmt = $db->prepare($createUserQuery);
+        $createUserStmt->execute([
+            $_SESSION['user_id'],
+            $_SESSION['username'],
+            'test_account',
+            password_hash('test_password', PASSWORD_DEFAULT),
+            $_SESSION['attack_power'],
+            $_SESSION['base_hp'],
+            $_SESSION['level']
+        ]);
+        
+        // 添加經驗值列 (如果不存在)
+        try {
+            $checkColumnQuery = "SHOW COLUMNS FROM players LIKE 'experience'";
+            $checkColumnStmt = $db->query($checkColumnQuery);
+            $experienceColumnExists = ($checkColumnStmt->rowCount() > 0);
+            
+            if (!$experienceColumnExists) {
+                $addColumnQuery = "ALTER TABLE players ADD COLUMN experience INT NOT NULL DEFAULT 0";
+                $db->exec($addColumnQuery);
+            }
+        } catch (PDOException $e) {
+            // 忽略錯誤，繼續執行
+        }
+        
+        echo "<script>console.log('已創建測試用戶')</script>";
+    }
+} catch (PDOException $e) {
+    // 記錄錯誤但繼續執行
+    echo "<script>console.error('檢查/創建測試用戶時出錯: " . addslashes($e->getMessage()) . "')</script>";
+}
 ?>
+
 <!DOCTYPE html>
 <html lang="zh-tw">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>戰鬥系統測試</title>
+    <title><?php echo $pageTitle; ?></title>
     <style>
         body {
             font-family: Arial, sans-serif;
-            background-color: #f0f0f0;
+            line-height: 1.6;
             margin: 0;
             padding: 0;
+            background-color: #f5f5f5;
         }
         .container {
             max-width: 1200px;
             margin: 0 auto;
             padding: 20px;
         }
-        .battle-container {
+        .panel {
             background-color: #fff;
-            border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            border-radius: 8px;
             padding: 20px;
             margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
         .battle-scene {
             display: flex;
-            flex-direction: column;
-            min-height: 400px;
-            position: relative;
+            justify-content: space-between;
+            margin-bottom: 20px;
         }
-        .monsters-area {
-            display: flex;
-            justify-content: center;
-            padding: 20px 0;
-        }
-        .monster-unit {
+        .monster-area, .player-area {
+            flex: 1;
+            padding: 20px;
             text-align: center;
-            width: 200px;
-            padding: 10px;
-            margin: 0 20px;
         }
-        .monster-name {
-            font-weight: bold;
-            margin-bottom: 10px;
-        }
-        .monster-sprite {
-            position: relative;
+        .monster-sprite, .player-sprite {
             width: 150px;
             height: 150px;
-            margin: 0 auto;
-            background-color: #f5f5f5;
-            border-radius: 5px;
-            overflow: hidden;
-        }
-        .monster-image {
-            max-width: 100%;
-            max-height: 100%;
-        }
-        .monster-hp {
-            margin-top: 10px;
-        }
-        .hp-text {
-            margin-bottom: 5px;
+            background-color: #eee;
+            margin: 0 auto 15px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            color: #666;
         }
         .hp-bar {
-            height: 15px;
+            height: 20px;
             background-color: #e0e0e0;
             border-radius: 10px;
+            margin-top: 10px;
             overflow: hidden;
             position: relative;
         }
         .hp-fill {
             height: 100%;
-            background-color: #cc4444;
+            background-color: #4CAF50;
             width: 100%;
-            transition: width 0.3s ease;
+            transition: width 0.3s;
         }
-        .characters-area {
-            display: flex;
-            justify-content: center;
-            padding: 20px 0;
-            border-top: 1px solid #eee;
+        .monster-hp .hp-fill {
+            background-color: #F44336;
         }
-        .character-unit {
-            display: flex;
-            align-items: center;
-            width: 300px;
-        }
-        .character-sprite {
-            width: 100px;
-            height: 100px;
-            background-color: #f5f5f5;
-            border-radius: 50%;
-            overflow: hidden;
-            margin-right: 20px;
-        }
-        .character-image {
-            max-width: 100%;
-            max-height: 100%;
-        }
-        .character-info {
-            flex: 1;
-        }
-        .character-name {
-            font-weight: bold;
-            margin-bottom: 5px;
-        }
-        .character-stats {
-            font-size: 14px;
-        }
-        .stat {
-            margin: 5px 0;
-        }
-        .battle-message {
+        .battle-log {
             background-color: #333;
             color: white;
             padding: 15px;
-            text-align: center;
-            border-radius: 5px;
-            margin-top: 20px;
+            border-radius: 8px;
+            margin: 20px 0;
+            min-height: 100px;
+            max-height: 200px;
+            overflow-y: auto;
         }
-        .button-area {
+        .battle-log-entry {
+            margin-bottom: 8px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #555;
+        }
+        .battle-controls {
             display: flex;
             justify-content: center;
             gap: 10px;
-            margin: 20px 0;
+            margin-top: 20px;
         }
-        button {
-            padding: 10px 15px;
-            border: none;
-            border-radius: 5px;
-            background-color: #4CAF50;
+        .button {
+            padding: 12px 24px;
+            background-color: #2196F3;
             color: white;
-            font-size: 16px;
+            border: none;
+            border-radius: 4px;
             cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
         }
-        button:hover {
-            background-color: #45a049;
+        .button:hover {
+            background-color: #0b7dda;
         }
-        button:disabled {
+        .button:disabled {
             background-color: #cccccc;
             cursor: not-allowed;
         }
-        .test-panel {
-            background-color: #fff;
-            border-radius: 10px;
-            box-shadow: 0 0 10px rgba(0,0,0,0.1);
-            padding: 20px;
+        .button.attack {
+            background-color: #4CAF50;
         }
-        .test-controls {
-            margin-bottom: 20px;
-        }
-        .test-controls h2 {
-            border-bottom: 1px solid #eee;
-            padding-bottom: 10px;
-        }
-        .test-button {
-            background-color: #2196F3;
-            margin-right: 10px;
-            margin-bottom: 10px;
-        }
-        .test-button.danger {
+        .button.danger {
             background-color: #F44336;
+        }
+        .debug-panel {
+            margin-top: 30px;
+            padding: 15px;
+            background-color: #f0f8ff;
+            border: 1px solid #b3e0ff;
+            border-radius: 8px;
+        }
+        .debug-controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .debug-button {
+            padding: 8px 15px;
+            font-size: 14px;
         }
         .debug-log {
             max-height: 300px;
             overflow-y: auto;
-            background-color: #f5f5f5;
             padding: 10px;
-            border-radius: 5px;
+            background-color: #f5f5f5;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin-top: 15px;
             font-family: monospace;
-            font-size: 14px;
-            margin-bottom: 20px;
+            white-space: pre-wrap;
         }
-        .debug-entry {
-            margin-bottom: 5px;
-            border-bottom: 1px dotted #ddd;
-            padding-bottom: 5px;
-        }
-        .debug-time {
-            color: #666;
-            margin-right: 10px;
-        }
-        .debug-info { color: #2196F3; }
-        .debug-warn { color: #FF9800; }
-        .debug-error { color: #F44336; }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>戰鬥系統測試頁面</h1>
-        
-        <div class="battle-container">
+        <div class="panel">
+            <h1>戰鬥系統測試</h1>
+            <p>本頁面用於測試戰鬥邏輯和數據庫更新功能</p>
+            
             <div class="battle-scene">
-                <div class="monsters-area">
-                    <div class="monster-unit" id="monster1">
-                        <div class="monster-name">測試怪物</div>
-                        <div class="monster-sprite">
-                            <img src="assets/images/monsters/default-monster.png" alt="怪物" class="monster-image" onerror="this.src='https://via.placeholder.com/150?text=Monster'">
-                            <div class="monster-effects"></div>
-                        </div>
-                        <div class="monster-hp">
-                            <div class="hp-text">HP <span class="current-hp">100</span>/100</div>
-                            <div class="hp-bar">
-                                <div class="hp-fill" style="width: 100%"></div>
-                            </div>
-                        </div>
+                <div class="monster-area">
+                    <h2>怪物</h2>
+                    <div class="monster-sprite">👾</div>
+                    <div class="monster-stats">
+                        HP: <span id="monster-hp">100</span>/<span id="monster-max-hp">100</span>
+                    </div>
+                    <div class="hp-bar monster-hp">
+                        <div class="hp-fill" id="monster-hp-bar"></div>
                     </div>
                 </div>
                 
-                <div class="characters-area">
-                    <div class="character-unit">
-                        <div class="character-sprite">
-                            <img src="assets/images/characters/character-1.png" alt="角色" class="character-image" onerror="this.src='https://via.placeholder.com/100?text=Player'">
-                        </div>
-                        <div class="character-info">
-                            <div class="character-name">測試玩家</div>
-                            <div class="character-stats">
-                                <div class="stat">HP <span class="hp-value">100</span></div>
-                                <div class="stat">LV <span class="level-value">5</span></div>
-                                <div class="stat">ATK <span class="atk-value">20</span></div>
-                            </div>
-                        </div>
+                <div class="player-area">
+                    <h2>玩家: <?php echo htmlspecialchars($_SESSION['username']); ?></h2>
+                    <div class="player-sprite">🧙</div>
+                    <div class="player-stats">
+                        <div>等級: <span id="player-level"><?php echo $_SESSION['level']; ?></span></div>
+                        <div>HP: <span id="player-hp"><?php echo $levelData['playerHp']; ?></span>/<span id="player-max-hp"><?php echo $levelData['playerHp']; ?></span></div>
+                        <div>攻擊力: <span id="player-atk"><?php echo $levelData['playerAttack']; ?></span></div>
+                    </div>
+                    <div class="hp-bar player-hp">
+                        <div class="hp-fill" id="player-hp-bar"></div>
                     </div>
                 </div>
             </div>
             
-            <div class="battle-message">
-                <div class="message-content" id="battle-message-content">
-                    戰鬥測試頁面已載入，請使用下方控制項測試戰鬥系統。
+            <div class="battle-log" id="battle-log">
+                <div class="battle-log-entry">戰鬥開始！</div>
+            </div>
+            
+            <div class="battle-controls">
+                <button id="attack-btn" class="button attack">玩家攻擊</button>
+                <button id="monster-attack-btn" class="button danger">怪物攻擊</button>
+                <button id="reset-btn" class="button">重設戰鬥</button>
+            </div>
+            
+            <div class="debug-panel">
+                <h3>測試功能</h3>
+                <div class="debug-controls">
+                    <button id="complete-level-btn" class="button debug-button">模擬關卡完成</button>
+                    <button id="win-battle-btn" class="button debug-button attack">模擬戰鬥勝利</button>
+                    <button id="test-level-up-btn" class="button debug-button">測試升級功能</button>
+                    <button id="check-db-btn" class="button debug-button">檢查數據庫記錄</button>
+                    <button id="fix-db-btn" class="button debug-button danger">修復數據庫</button>
                 </div>
+                
+                <h3>自定義測試</h3>
+                <div>
+                    <label for="level-id">關卡ID:</label>
+                    <input type="number" id="level-id" min="1" value="1" style="width:60px">
+                    
+                    <label for="chapter-id" style="margin-left:10px">章節ID:</label>
+                    <input type="number" id="chapter-id" min="1" value="1" style="width:60px">
+                    
+                    <label for="exp-reward" style="margin-left:10px">經驗值獎勵:</label>
+                    <input type="number" id="exp-reward" min="0" value="50" style="width:60px">
+                    
+                    <button id="custom-test-btn" class="button debug-button" style="margin-left:10px">執行自定義測試</button>
+                </div>
+                
+                <h3>調試日誌</h3>
+                <div class="debug-log" id="debug-log"></div>
             </div>
-            
-            <div class="button-area">
-                <button id="submit-code">提交答案</button>
-                <button id="retry-button" style="display:none;">重試</button>
-            </div>
-        </div>
-        
-        <div class="test-panel">
-            <div class="test-controls">
-                <h2>測試控制項</h2>
-                <button class="test-button" id="test-correct">測試答案正確</button>
-                <button class="test-button danger" id="test-incorrect">測試答案錯誤</button>
-                <button class="test-button" id="test-victory">測試勝利效果</button>
-                <button class="test-button danger" id="test-defeat">測試失敗效果</button>
-                <button class="test-button" id="test-next-wave">測試下一波</button>
-                <button class="test-button" id="test-reset">重置測試</button>
-            </div>
-            
-            <h2>測試日誌</h2>
-            <div class="debug-log" id="debug-log"></div>
-            
-            <h2>戰鬥狀態</h2>
-            <pre id="battle-state-display"></pre>
         </div>
     </div>
     
-    <!-- 測試用的簡化戰鬥系統 -->
     <script>
-        // 關卡數據模擬
-        const levelData = {
-            levelId: 1,
-            chapterId: 1,
-            teachingPoint: "測試教學點",
-            monsterHp: 100,
-            monsterAttack: 15,
-            playerHp: 100,
-            playerAttack: 20,
-            waveCount: 2,
-            expReward: 50,
-            isBoss: false
-        };
-        
         // 戰鬥狀態
         let battleState = {
-            playerHp: levelData.playerHp,
-            monsterHp: levelData.monsterHp,
+            playerHp: <?php echo $levelData['playerHp']; ?>,
+            monsterHp: <?php echo $levelData['monsterHp']; ?>,
             isPlayerTurn: true,
             isBattleOver: false,
             wave: 1,
-            maxWaves: levelData.waveCount,
+            maxWaves: <?php echo $levelData['waveCount']; ?>,
             hasWon: false
         };
         
-        // 日誌函數
-        function log(message, type = 'info') {
-            const logElement = document.getElementById('debug-log');
-            const time = new Date().toLocaleTimeString();
-            const entry = document.createElement('div');
-            entry.className = `debug-entry debug-${type}`;
-            entry.innerHTML = `<span class="debug-time">[${time}]</span> ${message}`;
-            logElement.prepend(entry);
+        // 等級數據
+        const levelData = <?php echo json_encode($levelData); ?>;
+        
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            updateHealthBars();
             
-            // 同時在控制台輸出
-            if (type === 'info') console.log(message);
-            else if (type === 'warn') console.warn(message);
-            else if (type === 'error') console.error(message);
-        }
-        
-        // 更新戰鬥狀態顯示
-        function updateBattleStateDisplay() {
-            document.getElementById('battle-state-display').textContent = JSON.stringify(battleState, null, 2);
-        }
-        
-        // 更新戰鬥消息
-        function updateBattleMessage(message) {
-            const messageElement = document.getElementById('battle-message-content');
-            if (messageElement) {
-                messageElement.textContent = message;
-                log(`更新戰鬥消息: ${message}`);
-            } else {
-                log('找不到戰鬥消息元素', 'warn');
-            }
-        }
-        
-        // 更新玩家HP顯示
-        function updatePlayerHp() {
-            const hpElement = document.querySelector('.character-stats .hp-value');
-            if (hpElement) {
-                hpElement.textContent = battleState.playerHp;
-                log(`更新玩家HP: ${battleState.playerHp}`);
-            } else {
-                log('找不到玩家HP元素', 'warn');
-            }
-        }
-        
-        // 更新怪物HP顯示
-        function updateMonsterHp() {
-            const hpElement = document.querySelector('.monster-hp .current-hp');
-            if (hpElement) {
-                hpElement.textContent = battleState.monsterHp;
-                log(`更新怪物HP: ${battleState.monsterHp}`);
-            } else {
-                log('找不到怪物HP元素', 'warn');
-            }
+            // 事件監聽
+            document.getElementById('attack-btn').addEventListener('click', playerAttack);
+            document.getElementById('monster-attack-btn').addEventListener('click', monsterAttack);
+            document.getElementById('reset-btn').addEventListener('click', resetBattle);
             
-            const hpBar = document.querySelector('.monster-hp .hp-fill');
-            if (hpBar) {
-                const percent = Math.max(0, battleState.monsterHp / levelData.monsterHp * 100);
-                hpBar.style.width = `${percent}%`;
-                
-                // 根據血量調整顏色
-                if (percent <= 20) {
-                    hpBar.style.backgroundColor = '#ff4444';
-                } else if (percent <= 50) {
-                    hpBar.style.backgroundColor = '#ffaa33';
-                } else {
-                    hpBar.style.backgroundColor = '#cc4444';
-                }
-            }
-        }
-        
-        // 計算傷害
-        function calculateDamage(attackPower) {
-            const minDamage = Math.floor(attackPower * 0.8);
-            const maxDamage = Math.floor(attackPower * 1.2);
-            const damage = Math.floor(Math.random() * (maxDamage - minDamage + 1)) + minDamage;
-            log(`計算傷害: 攻擊力 ${attackPower}，結果 ${damage}`);
-            return damage;
-        }
-        
-        // 顯示攻擊效果
-        function showAttackEffect(target, damage) {
-            log(`顯示攻擊效果: 目標 ${target}，傷害 ${damage}`);
-            
-            try {
-                // 創建特效元素
-                const effectsContainer = document.querySelector(target === 'monster' ? '.monster-effects' : '.character-unit');
-                
-                if (!effectsContainer) {
-                    log('找不到效果容器元素', 'warn');
-                    return;
-                }
-                
-                const damageText = document.createElement('div');
-                damageText.textContent = `-${damage}`;
-                damageText.style.position = 'absolute';
-                damageText.style.color = 'red';
-                damageText.style.fontWeight = 'bold';
-                damageText.style.fontSize = '24px';
-                damageText.style.top = '50%';
-                damageText.style.left = '50%';
-                damageText.style.transform = 'translate(-50%, -50%)';
-                damageText.style.textShadow = '1px 1px 2px black';
-                damageText.style.zIndex = '100';
-                
-                // 添加到容器
-                effectsContainer.appendChild(damageText);
-                
-                // 動畫效果
-                let opacity = 1;
-                let posY = 0;
-                const interval = setInterval(() => {
-                    opacity -= 0.05;
-                    posY -= 2;
-                    damageText.style.opacity = opacity;
-                    damageText.style.transform = `translate(-50%, calc(-50% + ${posY}px))`;
-                    
-                    if (opacity <= 0) {
-                        clearInterval(interval);
-                        damageText.remove();
-                    }
-                }, 50);
-            } catch (error) {
-                log(`顯示攻擊效果時出錯: ${error.message}`, 'error');
-            }
-        }
+            // 調試按鈕
+            document.getElementById('complete-level-btn').addEventListener('click', testCompleteLevel);
+            document.getElementById('win-battle-btn').addEventListener('click', simulateBattleWin);
+            document.getElementById('test-level-up-btn').addEventListener('click', testLevelUp);
+            document.getElementById('check-db-btn').addEventListener('click', checkDatabaseRecords);
+            document.getElementById('fix-db-btn').addEventListener('click', function() {
+                window.location.href = 'tools/fix-database.php';
+            });
+            document.getElementById('custom-test-btn').addEventListener('click', runCustomTest);
+        });
         
         // 玩家攻擊
         function playerAttack() {
-            try {
-                if (battleState.isBattleOver) {
-                    log('戰鬥已結束，無法攻擊', 'warn');
-                    return;
-                }
-                
-                const damage = calculateDamage(levelData.playerAttack);
-                battleState.monsterHp -= damage;
-                
-                showAttackEffect('monster', damage);
-                updateBattleMessage(`玩家攻擊！對怪物造成 ${damage} 點傷害！`);
-                updateMonsterHp();
-                updateBattleStateDisplay();
-                
-                // 檢查怪物是否死亡
-                if (battleState.monsterHp <= 0) {
-                    log(`怪物被擊敗! 當前波數: ${battleState.wave}/${battleState.maxWaves}`);
-                    
-                    if (battleState.wave < battleState.maxWaves) {
-                        nextWave();
-                    } else {
-                        endBattle(true);
-                    }
-                } else {
-                    // 怪物回合
-                    battleState.isPlayerTurn = false;
-                    setTimeout(monsterAttack, 1500);
-                }
-            } catch (error) {
-                log(`玩家攻擊時出錯: ${error.message}`, 'error');
-                console.error(error);
+            if (battleState.isBattleOver) return;
+            
+            // 計算傷害
+            const damage = calculateDamage(levelData.playerAttack);
+            battleState.monsterHp -= damage;
+            
+            // 記錄日誌
+            logBattle(`玩家攻擊！造成 ${damage} 點傷害！`);
+            logDebug(`玩家攻擊，怪物剩餘HP: ${battleState.monsterHp}`);
+            
+            // 更新UI
+            updateHealthBars();
+            
+            // 檢查怪物是否死亡
+            if (battleState.monsterHp <= 0) {
+                endBattle(true);
             }
         }
         
         // 怪物攻擊
         function monsterAttack() {
-            try {
-                if (battleState.isBattleOver) {
-                    log('戰鬥已結束，無法攻擊', 'warn');
-                    return;
-                }
-                
-                const damage = calculateDamage(levelData.monsterAttack);
-                battleState.playerHp -= damage;
-                
-                showAttackEffect('player', damage);
-                updateBattleMessage(`怪物攻擊！對玩家造成 ${damage} 點傷害！`);
-                updatePlayerHp();
-                updateBattleStateDisplay();
-                
-                // 檢查玩家是否死亡
-                if (battleState.playerHp <= 0) {
-                    endBattle(false);
-                } else {
-                    // 玩家回合
-                    battleState.isPlayerTurn = true;
-                }
-            } catch (error) {
-                log(`怪物攻擊時出錯: ${error.message}`, 'error');
-                console.error(error);
+            if (battleState.isBattleOver) return;
+            
+            // 計算傷害
+            const damage = calculateDamage(levelData.monsterAttack);
+            battleState.playerHp -= damage;
+            
+            // 記錄日誌
+            logBattle(`怪物攻擊！造成 ${damage} 點傷害！`);
+            logDebug(`怪物攻擊，玩家剩餘HP: ${battleState.playerHp}`);
+            
+            // 更新UI
+            updateHealthBars();
+            
+            // 檢查玩家是否死亡
+            if (battleState.playerHp <= 0) {
+                endBattle(false);
             }
         }
         
-        // 下一波
-        function nextWave() {
-            try {
-                battleState.wave++;
-                battleState.monsterHp = levelData.monsterHp; // 重置怪物血量
-                
-                log(`進入下一波: ${battleState.wave}/${battleState.maxWaves}`);
-                updateBattleMessage(`第 ${battleState.wave} 波戰鬥開始！`);
-                updateMonsterHp();
-                updateBattleStateDisplay();
-                
-                // 顯示波數效果
-                showWaveIndicator();
-                
-                // 重置回合
-                battleState.isPlayerTurn = true;
-            } catch (error) {
-                log(`切換到下一波時出錯: ${error.message}`, 'error');
-                console.error(error);
-            }
-        }
-        
-        // 顯示波數指示器
-        function showWaveIndicator() {
-            try {
-                const waveText = document.createElement('div');
-                waveText.textContent = `第 ${battleState.wave} 波`;
-                waveText.style.position = 'fixed';
-                waveText.style.top = '50%';
-                waveText.style.left = '50%';
-                waveText.style.transform = 'translate(-50%, -50%)';
-                waveText.style.backgroundColor = 'rgba(0,0,0,0.7)';
-                waveText.style.color = 'white';
-                waveText.style.padding = '20px 40px';
-                waveText.style.borderRadius = '10px';
-                waveText.style.fontSize = '24px';
-                waveText.style.zIndex = '1000';
-                
-                document.body.appendChild(waveText);
-                
-                setTimeout(() => {
-                    waveText.remove();
-                }, 2000);
-            } catch (error) {
-                log(`顯示波數指示器時出錯: ${error.message}`, 'error');
-            }
+        // 計算傷害
+        function calculateDamage(attackPower) {
+            const baseDamage = parseInt(attackPower);
+            const minDamage = Math.floor(baseDamage * 0.8);
+            const maxDamage = Math.floor(baseDamage * 1.2);
+            return Math.floor(Math.random() * (maxDamage - minDamage + 1)) + minDamage;
         }
         
         // 結束戰鬥
         function endBattle(isVictory) {
-            try {
-                battleState.isBattleOver = true;
-                battleState.hasWon = isVictory;
-                updateBattleStateDisplay();
-                
-                log(`戰鬥結束: ${isVictory ? '勝利' : '失敗'}`);
-                
-                if (isVictory) {
-                    updateBattleMessage('恭喜！你擊敗了所有怪物！');
-                    showVictoryEffect();
-                } else {
-                    updateBattleMessage('你被怪物擊敗了！');
-                    showDefeatEffect();
-                }
-                
-                // 顯示重試按鈕
-                const retryButton = document.getElementById('retry-button');
-                if (retryButton) {
-                    retryButton.style.display = 'inline-block';
-                }
-                
-                // 禁用提交按鈕
-                const submitButton = document.getElementById('submit-code');
-                if (submitButton) {
-                    submitButton.disabled = true;
-                }
-            } catch (error) {
-                log(`結束戰鬥時出錯: ${error.message}`, 'error');
-                console.error(error);
+            battleState.isBattleOver = true;
+            battleState.hasWon = isVictory;
+            
+            if (isVictory) {
+                logBattle('戰鬥勝利！怪物被擊敗了！');
+            } else {
+                logBattle('戰鬥失敗！你被怪物擊敗了...');
             }
         }
         
+        // 重設戰鬥
+        function resetBattle() {
+            battleState = {
+                playerHp: levelData.playerHp,
+                monsterHp: levelData.monsterHp,
+                isPlayerTurn: true,
+                isBattleOver: false,
+                wave: 1,
+                maxWaves: levelData.waveCount,
+                hasWon: false
+            };
+            
+            // 更新UI
+            updateHealthBars();
+            logBattle('戰鬥已重置！');
+            logDebug('戰鬥狀態已重置');
+            
+            document.getElementById('battle-log').innerHTML = 
+                '<div class="battle-log-entry">戰鬥開始！</div>';
+        }
+        
+        // 更新血量條
+        function updateHealthBars() {
+            // 玩家HP
+            document.getElementById('player-hp').textContent = Math.max(0, battleState.playerHp);
+            const playerHpPercent = Math.max(0, (battleState.playerHp / levelData.playerHp) * 100);
+            document.getElementById('player-hp-bar').style.width = `${playerHpPercent}%`;
+            
+            // 怪物HP
+            document.getElementById('monster-hp').textContent = Math.max(0, battleState.monsterHp);
+            const monsterHpPercent = Math.max(0, (battleState.monsterHp / levelData.monsterHp) * 100);
+            document.getElementById('monster-hp-bar').style.width = `${monsterHpPercent}%`;
+        }
+        
+        // 記錄戰鬥日誌
+        function logBattle(message) {
+            const battleLog = document.getElementById('battle-log');
+            const entry = document.createElement('div');
+            entry.className = 'battle-log-entry';
+            entry.textContent = message;
+            battleLog.appendChild(entry);
+            battleLog.scrollTop = battleLog.scrollHeight;
+        }
+        
+        // 記錄調試日誌
+        function logDebug(message) {
+            const debugLog = document.getElementById('debug-log');
+            const time = new Date().toLocaleTimeString();
+            debugLog.innerHTML += `[${time}] ${message}\n`;
+            debugLog.scrollTop = debugLog.scrollHeight;
+        }
+        
+        // 測試關卡完成
+        function testCompleteLevel() {
+            const levelId = document.getElementById('level-id').value || 1;
+            const chapterId = document.getElementById('chapter-id').value || 1;
+            
+            logDebug(`測試關卡完成: 關卡ID=${levelId}, 章節ID=${chapterId}`);
+            
+            fetch('api/complete-level.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({
+                    levelId: levelId,
+                    chapterId: chapterId
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                logDebug(`API回應: ${JSON.stringify(data)}`);
+                
+                if (data.success) {
+                    logBattle(`關卡 ${levelId} 完成記錄成功！`);
+                    
+                    if (data.expReward) {
+                        logBattle(`獲得 ${data.expReward} 經驗值！`);
+                    }
+                    
+                    if (data.levelUp) {
+                        logBattle(`升級了！現在是等級 ${data.newLevel}！`);
+                        document.getElementById('player-level').textContent = data.newLevel;
+                    }
+                } else {
+                    logBattle(`關卡完成記錄失敗: ${data.message}`);
+                }
+            })
+            .catch(error => {
+                logDebug(`API錯誤: ${error.message}`);
+                logBattle(`發生錯誤: ${error.message}`);
+            });
+        }
+        
+        // 模擬戰鬥勝利
+        function simulateBattleWin() {
+            battleState.monsterHp = 0;
+            updateHealthBars();
+            endBattle(true);
+            logBattle('模擬戰鬥勝利！');
+            logDebug('模擬戰鬥勝利完成');
+        }
+        
+        // 測試升級功能
+        function testLevelUp() {
+            const expInput = prompt('輸入要給予的經驗值 (建議: 100+):', '100');
+            if (!expInput) return;
+            
+            const exp = parseInt(expInput);
+            
+            logDebug(`測試升級功能: 增加 ${exp} 經驗值`);
+            
+            fetch('api/test-level-up.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({
+                    expAmount: exp
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                logDebug(`API回應: ${JSON.stringify(data)}`);
+                
+                if (data.success) {
+                    logBattle(`獲得 ${exp} 經驗值！`);
+                    
+                    if (data.levelUp) {
+                        logBattle(`升級了！現在是等級 ${data.newLevel}！`);
+                        document.getElementById('player-level').textContent = data.newLevel;
+                    }
+                } else {
+                    logBattle(`測試失敗: ${data.message}`);
+                }
+            })
+            .catch(error => {
+                logDebug(`API錯誤: ${error.message}`);
+                logBattle(`發生錯誤: ${error.message}`);
+            });
+        }
+        
+        // 檢查數據庫記錄
+        function checkDatabaseRecords() {
+            logDebug('檢查數據庫記錄...');
+            
+            fetch('api/check-records.php', {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                logDebug(`API回應: ${JSON.stringify(data)}`);
+                
+                if (data.success) {
+                    logBattle('數據庫記錄檢查完成');
+                    
+                    // 顯示玩家信息
+                    if (data.playerInfo) {
+                        logBattle(`玩家等級: ${data.playerInfo.level}, 經驗值: ${data.playerInfo.experience || 0}`);
+                        logBattle(`已完成關卡數: ${data.completedLevelsCount}`);
+                    }
+                } else {
+                    logBattle(`檢查失敗: ${data.message}`);
+                }
+            })
+            .catch(error => {
+                logDebug(`API錯誤: ${error.message}`);
+                logBattle(`發生錯誤: ${error.message}`);
+            });
+        }
+        
+        // 運行自定義測試
+        function runCustomTest() {
+            const levelId = document.getElementById('level-id').value || 1;
+            const chapterId = document.getElementById('chapter-id').value || 1;
+            const expReward = document.getElementById('exp-reward').value || 50;
+            
+            logDebug(`自定義測試: 關卡=${levelId}, 章節=${chapterId}, 經驗值=${expReward}`);
+            
+            fetch('api/complete-level.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({
+                    levelId: levelId,
+                    chapterId: chapterId,
+                    expReward: expReward
+                })
+            })
+            .then(response => response.text())
+            .then(text => {
+                logDebug(`原始API回應: ${text}`);
+                
+                try {
+                    const data = JSON.parse(text);
+                    if (data.success) {
+                        logBattle(`關卡 ${levelId} 完成！獲得 ${expReward} 經驗值！`);
+                        
+                        if (data.levelUp) {
+                            logBattle(`升級了！現在是等級 ${data.newLevel}！`);
+                        }
+                    } else {
+                        logBattle(`測試失敗: ${data.message}`);
+                    }
+                } catch (e) {
+                    logDebug(`JSON解析錯誤: ${e.message}`);
+                    logBattle(`回應格式錯誤，請查看調試日誌`);
+                }
+            })
+            .catch(error => {
+                logDebug(`API錯誤: ${error.message}`);
+                logBattle(`發生錯誤: ${error.message}`);
+            });
+        }
+    </script>
+</body>
+</html>
         // 顯示勝利效果
         function showVictoryEffect() {
             try {
