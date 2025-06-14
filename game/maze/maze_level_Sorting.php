@@ -261,32 +261,16 @@ if ($current_level < $level_info['required']) {
 
         <div class="battle-content">
             <div class="code-section">
-                <div class="problem-container" style="height: 200px;">
+                <div class="problem-container1">
                     <h2>挑戰題目</h2>
                     <div id="question-area" class="problem-description">
                         <div id="loading-msg" class="loading">題目生成中...</div>
                     </div>
                 </div>
-                <div id="options-area"></div>
             </div>
             <div class="battle-section">
-                <div class="battle-message">
-                    <div class="message-content" id="battle-message-content">
-                        請將下方程式碼行拖曳排序，組成正確的 Python 程式！
-                    </div>
-                </div>
-                <div class="battle-tutorial" style="height: 30%;">
-                    <h3 class="tutorial-title"><i class="fas fa-book"></i> 關卡說明</h3>
-                    <div class="tutorial-content">
-                        <div class="maze-level-desc">
-                            <?php echo htmlspecialchars($level_info['desc']); ?>
-                        </div>
-                        <div class="mb-4">
-                            <span class="badge bg-primary fs-6">需要等級 <?php echo $level_info['required']; ?></span>
-                            <span class="badge bg-success fs-6">你的等級 <?php echo $current_level; ?></span>
-                        </div>
-                    </div>
-                </div>
+                <div id="options-area"></div>
+
                 <div class="battle-actions mt-3">
                     <button type="button" class="btn btn-warning ms-2" id="resetBtn">
                         <i class="fas fa-undo"></i> 重製題目
@@ -307,7 +291,9 @@ if ($current_level < $level_info['required']) {
             $.get(url)
                 .done(function(data) {
                     if (typeof data === 'string') {
-                        try { data = JSON.parse(data); } catch(e) {}
+                        try {
+                            data = JSON.parse(data);
+                        } catch (e) {}
                     }
                     console.log('AJAX 回傳資料:', data);
                     if (data.error) {
@@ -325,9 +311,11 @@ if ($current_level < $level_info['required']) {
                         for (const label in data.options_arr) {
                             let code = data.options_arr[label]
                                 .replace(/\t/g, '&nbsp;&nbsp;&nbsp;&nbsp;')
-                                .replace(/^([ ]+)/gm, function(m) { return m.replace(/ /g, '&nbsp;'); });
+                                .replace(/^([ ]+)/gm, function(m) {
+                                    return m.replace(/ /g, '&nbsp;');
+                                });
                             html += `<li class="list-group-item d-flex align-items-start" data-id="${label}">
-                                <pre class="mb-0 text-start flex-fill" style="background:#f8f9fa;border-radius:4px;padding:8px;">${code}</pre>
+                                <pre class="mb-0 text-start flex-fill" style="background: #222; color: #fff; border-radius: 8px; padding: 16px;">${code}</pre>
                             </li>`;
                         }
                         html += '</ul></form></div>';
@@ -335,7 +323,9 @@ if ($current_level < $level_info['required']) {
                         $('#submitAnswerBtn').show();
                         $('#loading-msg').remove();
                         // 啟用 SortableJS
-                        new Sortable(document.getElementById('sortable-options'), { animation: 150 });
+                        new Sortable(document.getElementById('sortable-options'), {
+                            animation: 150
+                        });
                     } else {
                         $('#options-area').html('');
                         $('#submitAnswerBtn').hide();
@@ -379,52 +369,54 @@ if ($current_level < $level_info['required']) {
             }
             if (isContinuous) {
                 fetch('award.php', {
-                    method: 'POST',
-                    credentials: 'same-origin',
-                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                    body: ''
-                })
-                .then(response => {
-                    response.clone().text().then(function(txt) {
-                        console.log('award.php raw response:', txt);
-                    });
-                    if (response.status === 403) {
+                        method: 'POST',
+                        credentials: 'same-origin',
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded'
+                        },
+                        body: ''
+                    })
+                    .then(response => {
+                        response.clone().text().then(function(txt) {
+                            console.log('award.php raw response:', txt);
+                        });
+                        if (response.status === 403) {
+                            Swal.fire({
+                                icon: 'error',
+                                title: '權限錯誤 (403)',
+                                text: '請確認您已登入，或重新登入後再試。',
+                                confirmButtonText: '返回選單'
+                            }).then(() => {
+                                window.location.href = 'index.php';
+                            });
+                            throw new Error('award.php failed, status=403');
+                        }
+                        if (!response.ok) throw new Error('award.php failed, status=' + response.status);
+                        return response.json();
+                    })
+                    .then(data => {
+                        console.log('award.php JSON:', data);
                         Swal.fire({
-                            icon: 'error',
-                            title: '權限錯誤 (403)',
-                            text: '請確認您已登入，或重新登入後再試。',
+                            icon: 'success',
+                            title: '答對了！',
+                            html: '攻擊力 + ' + data.attack_power + '<br>血量 + ' + data.base_hp,
                             confirmButtonText: '返回選單'
                         }).then(() => {
                             window.location.href = 'index.php';
                         });
-                        throw new Error('award.php failed, status=403');
-                    }
-                    if (!response.ok) throw new Error('award.php failed, status=' + response.status);
-                    return response.json();
-                })
-                .then(data => {
-                    console.log('award.php JSON:', data);
-                    Swal.fire({
-                        icon: 'success',
-                        title: '答對了！',
-                        html: '攻擊力 + ' + data.attack_power + '<br>血量 + ' + data.base_hp,
-                        confirmButtonText: '返回選單'
-                    }).then(() => {
-                        window.location.href = 'index.php';
+                    })
+                    .catch((err) => {
+                        if (err.message.indexOf('status=403') === -1) {
+                            Swal.fire({
+                                icon: 'warning',
+                                title: '答對了，但獎勵未發放',
+                                text: '請稍後再試或聯絡管理員\n' + err,
+                                confirmButtonText: '返回選單'
+                            }).then(() => {
+                                window.location.href = 'index.php';
+                            });
+                        }
                     });
-                })
-                .catch((err) => {
-                    if (err.message.indexOf('status=403') === -1) {
-                        Swal.fire({
-                            icon: 'warning',
-                            title: '答對了，但獎勵未發放',
-                            text: '請稍後再試或聯絡管理員\n' + err,
-                            confirmButtonText: '返回選單'
-                        }).then(() => {
-                            window.location.href = 'index.php';
-                        });
-                    }
-                });
             } else {
                 Swal.fire({
                     icon: 'error',
@@ -436,4 +428,5 @@ if ($current_level < $level_info['required']) {
         });
     </script>
 </body>
+
 </html>

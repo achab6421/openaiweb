@@ -638,6 +638,49 @@ body {
     100% { transform: translateY(-50px); opacity: 0; }
 }
 
+/* 評估結果樣式 */
+.evaluation-details {
+    margin-top: 10px;
+    padding: 10px;
+    background-color: #f8f9fa;
+    border-left: 4px solid #6c757d;
+    border-radius: 0 4px 4px 0;
+}
+
+.evaluation-result {
+    display: block;
+    margin: 10px 0;
+    padding: 5px 10px;
+    border-radius: 3px;
+}
+
+.evaluation-result.正確 {
+    background-color: rgba(46, 204, 113, 0.2);
+    color: #27ae60;
+}
+
+.evaluation-result.不正確 {
+    background-color: rgba(231, 76, 60, 0.2);
+    color: #c0392b;
+}
+
+.evaluation-section {
+    display: block;
+    margin-top: 15px;
+    font-weight: bold;
+    color: #2c3e50;
+}
+
+.code-block {
+    background-color: #282c34;
+    color: #abb2bf;
+    padding: 10px;
+    border-radius: 4px;
+    margin: 10px 0;
+    overflow-x: auto;
+    font-family: 'Consolas', 'Monaco', monospace;
+}
+
 /* 響應式設計 */
 @media (max-width: 1200px) {
     .battle-content {

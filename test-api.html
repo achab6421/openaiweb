@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="zh-tw">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API 測試工具</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        textarea {
+            width: 100%;
+            height: 200px;
+            font-family: monospace;
+            margin-bottom: 10px;
+        }
+        button {
+            padding: 10px 15px;
+            margin-right: 10px;
+            cursor: pointer;
+        }
+        #output {
+            border: 1px solid #ccc;
+            padding: 10px;
+            background-color: #f5f5f5;
+            min-height: 200px;
+            white-space: pre-wrap;
+            font-family: monospace;
+            margin-top: 20px;
+        }
+        .success { color: green; }
+        .error { color: red; }
+        .login-form {
+            border: 1px solid #ddd;
+            padding: 15px;
+            margin-bottom: 20px;
+            background-color: #f9f9f9;
+        }
+        .login-form input {
+            padding: 8px;
+            margin-right: 10px;
+        }
+        .status-bar {
+            margin-bottom: 15px;
+            padding: 10px;
+            background-color: #eee;
+            border-radius: 4px;
+        }
+        .logged-in {
+            background-color: #d4edda;
+        }
+        .logged-out {
+            background-color: #f8d7da;
+        }
+    </style>
+</head>
+<body>
+    <h1>Python 代碼測試工具</h1>
+    
+    <div id="login-status" class="status-bar logged-out">
+        登入狀態：<span id="status-text">未登入</span>
+    </div>
+    
+    <div id="login-form" class="login-form">
+        <h3>請先登入系統</h3>
+        <input type="text" id="username" placeholder="使用者名稱" value="testuser">
+        <input type="password" id="password" placeholder="密碼" value="password">
+        <button id="loginButton">登入</button>
+    </div>
+    
+    <div>
+        <textarea id="codeInput" placeholder="在此輸入 Python 代碼...">print("你好，世界！")
+print("測試中文輸出")</textarea>
+    </div>
+    
+    <div>
+        <button id="testButton" disabled>測試代碼</button>
+        <button id="checkSessionButton">檢查會話</button>
+    </div>
+    
+    <div id="output">結果將顯示在這裡...</div>
+    
+    <script>
+        // 檢查登入狀態
+        function checkLoginStatus() {
+            fetch('api/check-session.php')
+                .then(response => response.json())
+                .then(data => {
+                    const statusBar = document.getElementById('login-status');
+                    const statusText = document.getElementById('status-text');
+                    const loginForm = document.getElementById('login-form');
+                    const testButton = document.getElementById('testButton');
+                    
+                    if (data.logged_in) {
+                        statusBar.className = 'status-bar logged-in';
+                        statusText.textContent = `已登入 (${data.username})`;
+                        loginForm.style.display = 'none';
+                        testButton.disabled = false;
+                    } else {
+                        statusBar.className = 'status-bar logged-out';
+                        statusText.textContent = '未登入';
+                        loginForm.style.display = 'block';
+                        testButton.disabled = true;
+                    }
+                })
+                .catch(error => {
+                    console.error('檢查會話錯誤:', error);
+                });
+        }
+        
+        // 登入函數
+        document.getElementById('loginButton').addEventListener('click', function() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const output = document.getElementById('output');
+            
+            output.innerHTML = '登入中...';
+            output.className = '';
+            
+            fetch('api/test-login.php', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({
+                    username: username,
+                    password: password
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    output.className = 'success';
+                    output.textContent = '登入成功！';
+                    checkLoginStatus(); // 更新狀態
+                } else {
+                    output.className = 'error';
+                    output.textContent = '登入失敗: ' + data.message;
+                }
+            })
+            .catch(error => {
+                output.className = 'error';
+                output.textContent = '登入錯誤: ' + error;
+            });
+        });
+
+        document.getElementById('testButton').addEventListener('click', function() {
+            const code = document.getElementById('codeInput').value;
+            const output = document.getElementById('output');
+            
+            output.innerHTML = '處理中...';
+            output.className = '';
+            
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', 'api/test-code.php', true);
+            xhr.setRequestHeader('Content-Type', 'application/json;charset=UTF-8');
+            xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+            xhr.responseType = 'json';
+            
+            xhr.onload = function() {
+                if (xhr.status === 200) {
+                    const data = xhr.response;
+                    
+                    if (data && data.success) {
+                        output.innerHTML = `<span class="success">執行成功</span>\n\n輸出：\n${data.output || '無輸出'}\n\n`;
+                        
+                        if (data.errors) {
+                            output.innerHTML += `警告/錯誤：\n${data.errors}\n\n`;
+                        }
+                        
+                        output.innerHTML += `執行時間：${data.executionTime}ms\nPython路徑：${data.pythonPath}`;
+                    } else {
+                        output.className = 'error';
+                        // 修正這一行: 增加檢查 data 是否存在
+                        output.innerHTML = `錯誤：${(data && data.message) || '未知錯誤或無響應'}\n`;
+                        
+                        if (data && data.errors) {
+                            output.innerHTML += `\n詳細錯誤：\n${data.errors}`;
+                        }
+                    }
+                } else {
+                    output.className = 'error';
+                    output.innerHTML = `HTTP錯誤：${xhr.status} ${xhr.statusText}`;
+                }
+            };
+            
+            xhr.onerror = function() {
+                output.className = 'error';
+                output.innerHTML = '網絡錯誤，無法連接到伺服器';
+            };
+            
+            xhr.send(JSON.stringify({ code: code }));
+        });
+        
+        document.getElementById('checkSessionButton').addEventListener('click', function() {
+            const output = document.getElementById('output');
+            output.innerHTML = '檢查會話中...';
+            output.className = '';
+            
+            fetch('api/check-session.php')
+                .then(response => response.json())
+                .then(data => {
+                    output.innerHTML = JSON.stringify(data, null, 2);
+                    if (data.logged_in) {
+                        output.className = 'success';
+                    }
+                })
+                .catch(error => {
+                    output.className = 'error';
+                    output.innerHTML = '錯誤：' + error;
+                });
+        });
+        
+        // 頁面載入時檢查登入狀態
+        checkLoginStatus();
+    </script>
+</body>
+</html>

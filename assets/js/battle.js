@@ -28,7 +28,7 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('retry-button').addEventListener('click', resetBattle);
     
     // 初始化教學標籤頁切換功能
-    initTutorialTabs();
+    // initTutorialTabs();
 });
 
 // 初始化程式碼編輯器
@@ -110,8 +110,8 @@ function extractCodeFramework(problem) {
 
 // 測試程式碼
 function testCode() {
-    const outputDisplay = document.getElementById('output-display');
     const code = editor.getValue();
+    const outputDisplay = document.getElementById('output-display');
     
     if (!code.trim()) {
         outputDisplay.innerHTML = '請先編寫程式碼';
@@ -119,43 +119,101 @@ function testCode() {
         return;
     }
     
-    // 顯示載入中
-    outputDisplay.innerHTML = '執行中...';
+    // 顯示測試中...
+    outputDisplay.innerHTML = '<div class="loading">測試運行中...</div>';
     outputDisplay.classList.remove('error');
     
-    // 發送代碼到後端進行測試
-    fetch('api/test-code.php', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-            'X-Requested-With': 'XMLHttpRequest'
-        },
-        body: JSON.stringify({
-            code: code
-        })
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            // 顯示執行結果
-            outputDisplay.innerHTML = data.output || '程式執行完成，沒有輸出結果。';
-            if (data.isError) {
-                outputDisplay.classList.add('error');
-                updateBattleMessage('程式執行失敗，請修正錯誤後再試。');
-            } else {
+    // 添加測試調試日誌
+    console.log('測試代碼請求開始，代碼長度:', code.length);
+    
+    // 使用XMLHttpRequest而不是fetch，因為可能有瀏覽器兼容性問題
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', 'api/test-code.php', true);
+    xhr.setRequestHeader('Content-Type', 'application/json;charset=UTF-8');
+    xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+    xhr.responseType = 'json';
+    
+    xhr.onload = function() {
+        if (xhr.status >= 200 && xhr.status < 300) {
+            console.log('測試代碼請求成功:', xhr.response);
+            const data = xhr.response;
+            
+            if (data && data.success === true) {
+                let resultHTML = '';
+                
+                // 顯示輸出
+                if (data.output && data.output.trim()) {
+                    resultHTML += '<h4>程式輸出:</h4>';
+                    resultHTML += `<pre class="output">${formatOutput(data.output)}</pre>`;
+                } else {
+                    resultHTML += '<p>程式沒有輸出</p>';
+                }
+                
+                // 如果有警告/錯誤但執行成功，也顯示
+                if (data.errors && data.errors.trim() && !data.isError) {
+                    resultHTML += '<h4>警告/注意:</h4>';
+                    resultHTML += `<pre class="warning">${formatOutput(data.errors)}</pre>`;
+                }
+                
+                // 顯示執行時間
+                if (data.executionTime) {
+                    resultHTML += `<div class="execution-info">執行時間: ${data.executionTime} 毫秒</div>`;
+                }
+                
+                outputDisplay.innerHTML = resultHTML;
                 outputDisplay.classList.remove('error');
-                updateBattleMessage('程式執行成功！');
+            } else {
+                outputDisplay.innerHTML = `<div class="error-title">執行錯誤</div>`;
+                
+                if (data && data.message) {
+                    outputDisplay.innerHTML += `<div>${data.message}</div>`;
+                }
+                
+                if (data && data.errors && data.errors.trim()) {
+                    outputDisplay.innerHTML += `<pre class="error-details">${formatOutput(data.errors)}</pre>`;
+                }
+                
+                outputDisplay.classList.add('error');
             }
         } else {
-            outputDisplay.innerHTML = `執行失敗: ${data.message}`;
+            console.error('測試代碼請求失敗:', xhr.status, xhr.statusText);
+            outputDisplay.innerHTML = `測試運行時發生錯誤: HTTP ${xhr.status} ${xhr.statusText}`;
             outputDisplay.classList.add('error');
         }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        outputDisplay.innerHTML = '執行期間發生錯誤，請稍後再試。';
+    };
+    
+    xhr.onerror = function() {
+        console.error('測試代碼網絡錯誤');
+        outputDisplay.innerHTML = '網絡錯誤，無法連接到伺服器';
         outputDisplay.classList.add('error');
+    };
+    
+    const data = JSON.stringify({
+        code: code,
+        levelId: levelData.levelId || 0
     });
+    
+    console.log('發送請求數據...');
+    xhr.send(data);
+}
+
+// 將輸出格式化為HTML，處理中文字符
+function formatOutput(output) {
+    if (!output) return '無輸出';
+    
+    // 確保輸出是字符串
+    if (typeof output !== 'string') {
+        output = String(output);
+    }
+    
+    // HTML編碼以防止XSS攻擊，同時保留換行符
+    return output
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;')
+        .replace(/\n/g, '<br>');
 }
 
 // 提交程式碼答案
@@ -165,8 +223,8 @@ function submitCode() {
         return;
     }
     
-    const outputDisplay = document.getElementById('output-display');
     const code = editor.getValue();
+    const outputDisplay = document.getElementById('output-display');
     
     if (!code.trim()) {
         outputDisplay.innerHTML = '請先編寫程式碼';
@@ -184,18 +242,18 @@ function submitCode() {
     outputDisplay.classList.remove('error');
     updateBattleMessage('正在檢查您的答案...');
     
-    // 發送代碼到後端進行驗證
-    fetch('api/validate-solution.php', {
+    // 發送代碼到後端進行評估
+    fetch('api/evaluate-answer.php', {
         method: 'POST',
         headers: {
-            'Content-Type': 'application/json',
+            'Content-Type': 'application/json; charset=UTF-8',
             'X-Requested-With': 'XMLHttpRequest'
         },
         body: JSON.stringify({
-            code: code,
             levelId: levelData.levelId,
-            problem: currentProblem,
-            threadId: currentThreadId
+            userCode: code,
+            threadId: currentThreadId,
+            problemStatement: currentProblem
         })
     })
     .then(response => response.json())
@@ -204,23 +262,24 @@ function submitCode() {
         submitButton.disabled = false;
         submitButton.textContent = '提交答案';
         
+        console.log('評估結果:', data);
+        
         if (data.success) {
-            // 處理驗證結果
-            const result = data.result;
+            // 處理評估結果
+            const isCorrect = data.isCorrect;
+            const evaluationText = data.evaluation;
             
-            // 顯示回饋
-            outputDisplay.innerHTML = `
-                <strong>${result.isCorrect ? '恭喜，答案正確！' : '答案不正確'}</strong>
-                <p>${result.feedback}</p>
-                <p>${result.explanation}</p>
-            `;
+            // 顯示回饋 - 將評估結果格式化後顯示
+            outputDisplay.innerHTML = formatEvaluationResult(evaluationText, isCorrect);
             
             // 根據結果執行戰鬥邏輯
-            if (result.isCorrect) {
+            if (isCorrect) {
                 outputDisplay.classList.remove('error');
+                // 答案正確，進行玩家攻擊
                 playerAttack();
             } else {
                 outputDisplay.classList.add('error');
+                // 答案錯誤，進行怪物攻擊
                 monsterAttack();
             }
         } else {
@@ -239,221 +298,445 @@ function submitCode() {
     });
 }
 
+// 格式化評估結果為HTML
+function formatEvaluationResult(evaluation, isCorrect) {
+    // 創建基本標題
+    let formattedResult = `<div class="evaluation-header ${isCorrect ? 'correct' : 'incorrect'}">
+        <h3>${isCorrect ? '恭喜，答案正確！' : '答案不正確'}</h3>
+    </div>`;
+    
+    // 如果沒有評估內容，添加默認訊息
+    if (!evaluation) {
+        return formattedResult + `<p>${isCorrect ? '你成功解決了這個問題！' : '請檢查你的代碼並再試一次。'}</p>`;
+    }
+    
+    // 將評估內容格式化
+    const formattedEvaluation = evaluation
+        .replace(/\n/g, '<br>')
+        .replace(/```python([\s\S]*?)```/g, '<pre class="code-block"><code>$1</code></pre>')
+        .replace(/評估結果: (正確|不正確)/g, '<strong class="evaluation-result $1">評估結果: $1</strong>')
+        .replace(/評估結果：(正確|不正確)/g, '<strong class="evaluation-result $1">評估結果：$1</strong>')
+        .replace(/詳細分析:/g, '<strong class="evaluation-section">詳細分析:</strong>')
+        .replace(/詳細分析：/g, '<strong class="evaluation-section">詳細分析：</strong>')
+        .replace(/改進建議:/g, '<strong class="evaluation-section">改進建議:</strong>')
+        .replace(/改進建議：/g, '<strong class="evaluation-section">改進建議：</strong>');
+    
+    return formattedResult + '<div class="evaluation-content">' + formattedEvaluation + '</div>';
+}
+
+// 計算傷害值 (含隨機波動)
+function calculateDamage(attackPower) {
+    // 傷害值在攻擊力的80%~120%之間浮動
+    const minDamage = Math.floor(attackPower * 0.8);
+    const maxDamage = Math.floor(attackPower * 1.2);
+    return Math.floor(Math.random() * (maxDamage - minDamage + 1)) + minDamage;
+}
+
 // 玩家攻擊
 function playerAttack() {
-    if (battleState.isBattleOver) return;
-    
-    // 計算傷害
-    const damage = Math.floor(levelData.playerAttack * (0.8 + Math.random() * 0.4));
-    
-    // 怪物受到傷害
-    battleState.monsterHp -= damage;
-    
-    // 確保生命值不會小於0
-    if (battleState.monsterHp < 0) battleState.monsterHp = 0;
-    
-    // 更新怪物生命條
-    updateMonsterHp();
-    
-    // 顯示攻擊效果
-    showAttackEffect('monster1', damage);
-    
-    // 顯示戰鬥消息
-    updateBattleMessage(`您的代碼擊中怪物，造成 ${damage} 點傷害！`);
-    
-    // 檢查戰鬥是否結束
-    setTimeout(() => {
+    try {
+        if (battleState.isBattleOver) {
+            console.log('戰鬥已結束，無法進行玩家攻擊');
+            return;
+        }
+        
+        // 使用 playerAttack 而非 playerAttackPower (修正這裡)
+        const playerAttack = parseInt(levelData.playerAttack) || 10;
+        const damage = calculateDamage(playerAttack);
+        battleState.monsterHp -= damage;
+        console.log(`玩家攻擊！造成 ${damage} 點傷害，怪物剩餘血量: ${battleState.monsterHp}`);
+        
+        // 顯示攻擊效果
+        showAttackEffect('monster', damage);
+        
+        // 更新UI
+        updateMonsterHp();
+        updateBattleMessage(`你的答案正確！對怪物造成了 ${damage} 點傷害！`);
+        
+        // 檢查怪物是否死亡
         if (battleState.monsterHp <= 0) {
-            // 如果還有下一波
+            console.log('怪物被擊敗！');
+            // 檢查是否有下一波
             if (battleState.wave < battleState.maxWaves) {
-                battleState.wave++;
-                battleState.monsterHp = levelData.monsterHp;
-                updateMonsterHp();
-                updateBattleMessage(`第 ${battleState.wave}/${battleState.maxWaves} 波怪物出現了！`);
+                nextWave();
             } else {
-                // 戰鬥勝利
-                battleState.isBattleOver = true;
-                battleState.hasWon = true;
-                updateBattleMessage('戰鬥勝利！您成功完成了這個關卡！');
-                showResultModal(true);
+                // 最後一波結束，勝利
+                endBattle(true);
             }
         } else {
-            // 輪到怪物攻擊
-            setTimeout(monsterAttack, 1000);
+            // 怪物還活著，換怪物回合
+            battleState.isPlayerTurn = false;
+            setTimeout(monsterAttack, 1500); // 延遲1.5秒後怪物攻擊
         }
-    }, 1000);
+    } catch (error) {
+        console.error('玩家攻擊過程中發生錯誤:', error);
+        // 嘗試恢復遊戲狀態
+        battleState.isPlayerTurn = true;
+    }
 }
 
 // 怪物攻擊
 function monsterAttack() {
-    if (battleState.isBattleOver) return;
-    
-    // 計算傷害
-    const damage = Math.floor(levelData.monsterAttack * (0.8 + Math.random() * 0.4));
-    
-    // 玩家受到傷害
-    battleState.playerHp -= damage;
-    
-    // 確保生命值不會小於0
-    if (battleState.playerHp < 0) battleState.playerHp = 0;
-    
-    // 更新玩家生命值
-    updatePlayerHp();
-    
-    // 顯示受傷效果
-    // 目前簡單顯示傷害文本
-    document.querySelector('.character-unit').classList.add('damaged');
-    setTimeout(() => {
-        document.querySelector('.character-unit').classList.remove('damaged');
-    }, 500);
-    
-    // 顯示戰鬥消息
-    updateBattleMessage(`怪物攻擊了您，造成 ${damage} 點傷害！`);
-    
-    // 檢查戰鬥是否結束
-    setTimeout(() => {
-        if (battleState.playerHp <= 0) {
-            // 戰鬥失敗
-            battleState.isBattleOver = true;
-            battleState.hasWon = false;
-            updateBattleMessage('戰鬥失敗！您被怪物擊敗了...');
-            showResultModal(false);
+    try {
+        if (battleState.isBattleOver) {
+            console.log('戰鬥已結束，無法進行怪物攻擊');
+            return;
         }
-    }, 1000);
-}
-
-// 更新怪物生命值顯示
-function updateMonsterHp() {
-    const monster = document.getElementById('monster1');
-    const hpText = monster.querySelector('.current-hp');
-    const hpFill = monster.querySelector('.hp-fill');
-    
-    hpText.textContent = Math.max(0, battleState.monsterHp);
-    
-    // 更新血條百分比
-    const hpPercent = Math.max(0, (battleState.monsterHp / levelData.monsterHp) * 100);
-    hpFill.style.width = `${hpPercent}%`;
-    
-    // 血條顏色變化
-    if (hpPercent < 20) {
-        hpFill.style.backgroundColor = '#e74c3c';
-    } else if (hpPercent < 50) {
-        hpFill.style.backgroundColor = '#f39c12';
-    } else {
-        hpFill.style.backgroundColor = '#2ecc71';
+        
+        // 使用正確的怪物攻擊力參數
+        const monsterAttack = parseInt(levelData.monsterAttack) || 5;
+        const damage = calculateDamage(monsterAttack);
+        battleState.playerHp -= damage;
+        console.log(`怪物攻擊！造成 ${damage} 點傷害，玩家剩餘血量: ${battleState.playerHp}`);
+        
+        // 顯示攻擊效果
+        showAttackEffect('player', damage);
+        
+        // 更新UI
+        updatePlayerHp();
+        updateBattleMessage(`怪物攻擊了你，造成 ${damage} 點傷害！`);
+        
+        // 檢查玩家是否死亡
+        if (battleState.playerHp <= 0) {
+            console.log('玩家被擊敗！');
+            endBattle(false); // 失敗
+        } else {
+            // 玩家還活著，換玩家回合
+            battleState.isPlayerTurn = true;
+        }
+    } catch (error) {
+        console.error('怪物攻擊過程中發生錯誤:', error);
+        // 嘗試恢復遊戲狀態
+        battleState.isPlayerTurn = true;
     }
-}
-
-// 更新玩家生命值顯示
-function updatePlayerHp() {
-    const playerHpElement = document.getElementById('player-hp');
-    const characterHpElement = document.querySelector('.hp-value');
-    
-    playerHpElement.textContent = Math.max(0, battleState.playerHp);
-    characterHpElement.textContent = Math.max(0, battleState.playerHp);
-}
-
-// 顯示攻擊效果
-function showAttackEffect(targetId, damage) {
-    const target = document.getElementById(targetId);
-    const effectsContainer = target.querySelector('.monster-effects');
-    
-    // 創建攻擊效果元素
-    const attackEffect = document.createElement('div');
-    attackEffect.className = 'attack-effect';
-    effectsContainer.appendChild(attackEffect);
-    
-    // 創建傷害文字
-    const damageText = document.createElement('div');
-    damageText.className = 'damage-text';
-    damageText.textContent = `-${damage}`;
-    damageText.style.left = `${Math.random() * 60 + 20}%`;
-    damageText.style.top = `${Math.random() * 60 + 20}%`;
-    effectsContainer.appendChild(damageText);
-    
-    // 動畫結束後移除元素
-    setTimeout(() => {
-        attackEffect.remove();
-        damageText.remove();
-    }, 1000);
 }
 
 // 更新戰鬥消息
 function updateBattleMessage(message) {
-    document.getElementById('battle-message-content').textContent = message;
-}
-
-// 顯示結果彈窗
-function showResultModal(isVictory) {
-    const modal = document.getElementById('result-modal');
-    const title = document.getElementById('result-title');
-    const message = document.getElementById('result-message');
-    const expGain = document.getElementById('exp-gain');
+    // 獲取戰鬥消息元素
+    const battleMessageElement = document.getElementById('battle-message') || 
+        document.getElementById('battle-log') || 
+        document.getElementById('battle-message-content');
     
-    if (isVictory) {
-        title.textContent = '戰鬥勝利！';
-        message.innerHTML = `
-            <p>恭喜您成功完成了這個關卡！</p>
-            <p>您的程式碼成功地解決了問題，並擊敗了怪物！</p>
-        `;
-        expGain.textContent = levelData.expReward;
+    // 如果元素存在，則更新內容
+    if (battleMessageElement) {
+        battleMessageElement.textContent = message;
+        // 添加動畫效果 (如果需要)
+        battleMessageElement.classList.remove('message-animation');
+        void battleMessageElement.offsetWidth; // 強制重繪
+        battleMessageElement.classList.add('message-animation');
     } else {
-        title.textContent = '戰鬥失敗';
-        message.innerHTML = `
-            <p>很遺憾，您在這次挑戰中失敗了。</p>
-            <p>請修改您的程式碼，然後再次嘗試。</p>
-        `;
-        expGain.textContent = '0';
+        // 如果找不到消息元素，記錄警告
+        console.warn('找不到戰鬥消息顯示元素，無法更新消息:', message);
     }
-    
-    modal.style.display = 'block';
 }
 
 // 重置戰鬥狀態
 function resetBattle() {
     // 重置戰鬥狀態
     battleState = {
-        playerHp: levelData.playerHp,
-        monsterHp: levelData.monsterHp,
+        playerHp: parseInt(levelData.playerHp) || 100,
+        monsterHp: parseInt(levelData.monsterHp) || 100,
         isPlayerTurn: true,
         isBattleOver: false,
         wave: 1,
-        maxWaves: levelData.waveCount,
+        maxWaves: parseInt(levelData.waveCount) || 1,
         hasWon: false
     };
+    
+    console.log('重置戰鬥狀態:', battleState);
     
     // 更新生命值顯示
     updatePlayerHp();
     updateMonsterHp();
     
-    // 隱藏結果彈窗
-    document.getElementById('result-modal').style.display = 'none';
+    // 隱藏結果彈窗 (如果存在)
+    const resultModal = document.getElementById('result-modal');
+    if (resultModal) {
+        resultModal.style.display = 'none';
+    }
+    
+    // 啟用提交按鈕
+    const submitButton = document.getElementById('submit-code');
+    if (submitButton) {
+        submitButton.disabled = false;
+        submitButton.textContent = '提交答案';
+    }
+    
+    // 隱藏重試按鈕
+    const retryButton = document.getElementById('retry-button');
+    if (retryButton) {
+        retryButton.style.display = 'none';
+    }
     
     // 更新戰鬥消息
     updateBattleMessage('戰鬥已重置，請編寫程式碼以擊敗怪物！');
     
     // 清空輸出區
-    document.getElementById('output-display').innerHTML = '';
+    const outputDisplay = document.getElementById('output-display');
+    if (outputDisplay) {
+        outputDisplay.innerHTML = '';
+        outputDisplay.classList.remove('error');
+    }
 }
 
-// 初始化教學標籤頁
-function initTutorialTabs() {
-    const tabs = document.querySelectorAll('.tutorial-tab');
+// 更新玩家生命值顯示 - 適應當前頁面結構
+function updatePlayerHp() {
+    console.log('更新玩家HP:', battleState.playerHp);
     
-    tabs.forEach(tab => {
-        tab.addEventListener('click', function() {
-            // 移除所有標籤頁的活動狀態
-            tabs.forEach(t => t.classList.remove('active'));
-            
-            // 移除所有面板的活動狀態
-            document.querySelectorAll('.tutorial-panel').forEach(p => p.classList.remove('active'));
-            
-            // 激活當前標籤頁和對應的面板
-            this.classList.add('active');
-            const tabId = this.getAttribute('data-tab');
-            document.getElementById(tabId).classList.add('active');
-        });
+    // 根據 level.php 的結構精確定位元素
+    const playerHpElement = document.querySelector('.character-stats .hp-value');
+    if (playerHpElement) {
+        playerHpElement.textContent = battleState.playerHp;
+        console.log('成功更新玩家HP顯示元素');
+    } else {
+        console.warn('找不到玩家HP顯示元素 (.character-stats .hp-value)');
+    }
+    
+    // 可選：如果有玩家血條，也可以更新
+    const playerHpBar = document.querySelector('.character-stats .hp-bar');
+    if (playerHpBar) {
+        const playerMaxHp = parseInt(levelData.playerHp) || 100;
+        const currentHp = Math.max(0, battleState.playerHp);
+        const percent = (currentHp / playerMaxHp) * 100;
+        
+        playerHpBar.style.width = `${percent}%`;
+        console.log('成功更新玩家HP條');
+    }
+}
+
+// 更新怪物生命值顯示 - 適應特定HTML結構
+function updateMonsterHp() {
+    console.log('更新怪物HP:', battleState.monsterHp);
+    
+    // 根據 level.php 的結構精確定位元素
+    const monsterHpElement = document.querySelector('.monster-hp .current-hp');
+    if (monsterHpElement) {
+        monsterHpElement.textContent = battleState.monsterHp;
+        console.log('成功更新怪物HP顯示元素');
+    } else {
+        console.warn('找不到怪物HP顯示元素 (.monster-hp .current-hp)');
+    }
+    
+    // 更新怪物血條
+    const monsterHpBar = document.querySelector('.monster-hp .hp-bar .hp-fill');
+    if (monsterHpBar) {
+        const monsterMaxHp = parseInt(levelData.monsterHp) || 100;
+        const currentHp = Math.max(0, battleState.monsterHp);
+        const percent = (currentHp / monsterMaxHp) * 100;
+        
+        monsterHpBar.style.width = `${percent}%`;
+        console.log('成功更新怪物HP條:', `${percent}%`);
+        
+        // 根據血量百分比更改顏色
+        if (percent <= 20) {
+            monsterHpBar.style.backgroundColor = '#ff4444'; // 紅色
+        } else if (percent <= 50) {
+            monsterHpBar.style.backgroundColor = '#ffaa33'; // 橙色
+        }
+    } else {
+        console.warn('找不到怪物HP條元素 (.monster-hp .hp-bar .hp-fill)');
+    }
+}
+
+// 進入下一波怪物
+function nextWave() {
+    battleState.wave++;
+    battleState.monsterHp = parseInt(levelData.monsterHp); // 重置怪物生命值
+    
+    // 更新UI
+    updateBattleMessage(`第 ${battleState.wave}/${battleState.maxWaves} 波！新的怪物出現了！`);
+    updateMonsterHp();
+    
+    // 播放下一波動畫
+    showNextWaveEffect();
+    
+    // 重置回合
+    battleState.isPlayerTurn = true;
+}
+
+// 顯示下一波效果
+function showNextWaveEffect() {
+    const waveIndicator = document.createElement('div');
+    waveIndicator.className = 'wave-indicator';
+    waveIndicator.innerHTML = `<span>第 ${battleState.wave} 波</span>`;
+    document.getElementById('battle-container').appendChild(waveIndicator);
+    
+    // 2秒後移除效果
+    setTimeout(() => {
+        waveIndicator.remove();
+    }, 2000);
+}
+
+// 結束戰鬥
+function endBattle(isVictory) {
+    battleState.isBattleOver = true;
+    battleState.hasWon = isVictory;
+    
+    if (isVictory) {
+        updateBattleMessage('恭喜！你擊敗了所有怪物，完成了這個關卡！');
+        
+        // 顯示勝利效果
+        showVictoryEffect();
+        
+        // 記錄關卡完成並解鎖下一關
+        recordLevelCompletion();
+        
+        // 顯示結果彈窗
+        showResultModal(true);
+    } else {
+        updateBattleMessage('你被怪物擊敗了！');
+        
+        // 顯示失敗效果
+        showDefeatEffect();
+        
+        // 顯示結果彈窗
+        showResultModal(false);
+    }
+}
+
+// 顯示勝利效果
+function showVictoryEffect() {
+    const victoryEffect = document.createElement('div');
+    victoryEffect.className = 'victory-effect';
+    victoryEffect.innerHTML = '<span>Victory!</span>';
+    document.getElementById('battle-container').appendChild(victoryEffect);
+    
+    // 播放勝利音效
+    playSound('victory');
+    
+    // 3秒後移除效果
+    setTimeout(() => {
+        victoryEffect.remove();
+    }, 3000);
+}
+
+// 顯示失敗效果
+function showDefeatEffect() {
+    const defeatEffect = document.createElement('div');
+    defeatEffect.className = 'defeat-effect';
+    defeatEffect.innerHTML = '<span>Defeat!</span>';
+    document.getElementById('battle-container').appendChild(defeatEffect);
+    
+    // 播放失敗音效
+    playSound('defeat');
+    
+    // 3秒後移除效果
+    setTimeout(() => {
+        defeatEffect.remove();
+    }, 3000);
+}
+
+// 播放音效
+function playSound(type) {
+    // 如果存在音效系統則使用，否則只記錄到控制台
+    console.log(`播放音效: ${type}`);
+    // 未來可以實現實際的音效播放功能
+}
+
+// 修改 showAttackEffect 函數來適應不同的 HTML 結構
+function showAttackEffect(targetId, damage) {
+    console.log(`顯示攻擊效果，目標: ${targetId}，傷害: ${damage}`);
+    
+    // 尋找適合的容器元素
+    let battleContainer = document.getElementById('battle-container');
+    
+    // 如果找不到 battle-container，尋找其他可能的元素
+    if (!battleContainer) {
+        const possibleContainers = [
+            document.querySelector('.battle-area'),
+            document.querySelector('.battle-container'),
+            document.querySelector('.game-container'),
+            document.querySelector('.container'),
+            document.getElementById('main-content'),
+            document.body // 最後的備用選項
+        ];
+        
+        // 使用找到的第一個非空元素
+        for (const container of possibleContainers) {
+            if (container) {
+                battleContainer = container;
+                console.log('使用備用容器:', container.tagName, container.className || container.id);
+                break;
+            }
+        }
+    }
+    
+    // 創建效果容器
+    let effectsContainer = document.getElementById('effects-container');
+    if (!effectsContainer) {
+        effectsContainer = document.createElement('div');
+        effectsContainer.id = 'effects-container';
+        effectsContainer.style.position = 'fixed'; // 改為 fixed 以確保顯示
+        effectsContainer.style.top = '0';
+        effectsContainer.style.left = '0';
+        effectsContainer.style.width = '100%';
+        effectsContainer.style.height = '100%';
+        effectsContainer.style.pointerEvents = 'none'; // 讓點擊事件穿透
+        effectsContainer.style.zIndex = '9999'; // 確保在頂層
+        
+        // 添加到找到的容器或直接添加到 body
+        if (battleContainer) {
+            battleContainer.appendChild(effectsContainer);
+        } else {
+            console.warn('找不到合適的容器，將效果直接添加到 body');
+            document.body.appendChild(effectsContainer);
+        }
+    }
+    
+    // 創建攻擊效果元素
+    const attackEffect = document.createElement('div');
+    attackEffect.className = 'attack-effect';
+    attackEffect.style.position = 'absolute';
+    attackEffect.style.width = '50px';
+    attackEffect.style.height = '50px';
+    attackEffect.style.backgroundColor = targetId === 'monster' ? 'red' : 'blue';
+    attackEffect.style.borderRadius = '50%';
+    attackEffect.style.opacity = '0.7';
+    attackEffect.style.left = `${Math.random() * 80 + 10}%`;
+    attackEffect.style.top = `${Math.random() * 80 + 10}%`;
+    effectsContainer.appendChild(attackEffect);
+    
+    // 創建傷害文字
+    const damageText = document.createElement('div');
+    damageText.className = 'damage-text';
+    damageText.textContent = `-${damage}`;
+    damageText.style.position = 'absolute';
+    damageText.style.color = targetId === 'monster' ? 'red' : 'orange';
+    damageText.style.fontWeight = 'bold';
+    damageText.style.fontSize = '24px';
+    damageText.style.textShadow = '1px 1px 2px black';
+    damageText.style.left = `${Math.random() * 60 + 20}%`;
+    damageText.style.top = `${Math.random() * 60 + 20}%`;
+    effectsContainer.appendChild(damageText);
+    
+    // 添加動畫效果
+    attackEffect.animate([
+        { transform: 'scale(0.5)', opacity: 0.8 },
+        { transform: 'scale(1.2)', opacity: 1 },
+        { transform: 'scale(1)', opacity: 0 }
+    ], {
+        duration: 800,
+        easing: 'ease-out'
     });
+    
+    damageText.animate([
+        { transform: 'translateY(0)', opacity: 1 },
+        { transform: 'translateY(-50px)', opacity: 0 }
+    ], {
+        duration: 1000,
+        easing: 'ease-out'
+    });
+    
+    // 動畫結束後移除元素
+    setTimeout(() => {
+        try {
+            if (attackEffect.parentNode) attackEffect.parentNode.removeChild(attackEffect);
+            if (damageText.parentNode) damageText.parentNode.removeChild(damageText);
+        } catch (e) {
+            console.warn('移除效果元素時發生錯誤:', e);
+        }
+    }, 1000);
 }
 
 // 將Markdown轉換為HTML

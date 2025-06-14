@@ -137,7 +137,7 @@ $monster_attack = $level['attack_power'];
                     </div>
                 </div>
 
-                <div class="code-editor-container">
+                <div class="code-editor-container" style="height: 100px;">
                     <h3>Python 程式碼</h3>
                     <textarea id="code-editor"></textarea>
                     <div class="editor-buttons">
@@ -146,7 +146,7 @@ $monster_attack = $level['attack_power'];
                     </div>
                 </div>
 
-                <div class="output-container mb-3">
+                <div class="output-container" style="height: 220px; margin-bottom: 100px;">
                     <h3>執行結果</h3>
                     <div id="output-display" class="output-display"></div>
                 </div>

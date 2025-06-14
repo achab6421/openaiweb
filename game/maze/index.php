@@ -25,11 +25,106 @@ $current_level = $_SESSION['level'];
     <link rel="stylesheet" href="../../assets/css/dashboard.css">
     <link rel="stylesheet" href="../../assets/css/chapter.css">
     <link rel="stylesheet" href="../../assets/css/quest.css">
+    <link rel="stylesheet" href="../../css/problem-display.css">
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <style>
+        .maze-levels {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 24px;
+            justify-content: flex-start;
+        }
 
+        .maze-level {
+            background: #111;
+            color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.18);
+            margin-bottom: 0;
+            min-width: 220px;
+            max-width: 260px;
+            flex: 1 1 220px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: pointer;
+            transition: box-shadow 0.2s, background 0.2s;
+            border: 2px solid #222;
+        }
 
+        .maze-level:hover:not(.locked) {
+            box-shadow: 0 8px 24px rgba(60, 60, 60, 0.18);
+            background: #222;
+            border: 2px solid #444;
+        }
 
+        .maze-level.locked {
+            background: #222;
+            color: #888;
+            cursor: not-allowed;
+            border: 2px dashed #444;
+        }
+
+        .maze-level .maze-pattern {
+            width: 48px;
+            height: 48px;
+            background: #222;
+            border-radius: 50%;
+            margin-bottom: 8px;
+        }
+
+        .maze-level .level-lock {
+            color: #e67e22;
+            font-size: 1.5rem;
+            margin-bottom: 4px;
+        }
+
+        .maze-level .level-required {
+            color: #e67e22;
+            font-size: 0.98rem;
+            margin-bottom: 8px;
+        }
+
+        .maze-level .level-number {
+            font-size: 2.2rem;
+            font-weight: bold;
+            margin: 10px 0 4px 0;
+            letter-spacing: 2px;
+            background: #222;
+            border-radius: 6px;
+            padding: 2px 18px;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+            color: #fff;
+        }
+
+        .maze-level .level-label {
+            font-size: 1.1rem;
+            font-weight: 500;
+            margin-bottom: 0;
+            letter-spacing: 1px;
+        }
+
+        @media (max-width: 900px) {
+            .maze-levels {
+                flex-direction: column;
+                gap: 16px;
+            }
+
+            .maze-level {
+                min-width: 0;
+                max-width: 100%;
+                width: 100%;
+            }
+        }
+
+        /* 新增 quest-list-panel 邊距 */
+        .maze-info {
+            margin-top: 20px;
+            margin-left: 20px;
+        }
+    </style>
 </head>
 
 <body>
@@ -80,9 +175,9 @@ $current_level = $_SESSION['level'];
                             <p>探索充滿謎題與挑戰的程式迷宮，解開謎題、擊敗怪物、獲取寶藏！每個迷宮都有不同的難度和主題，挑戰自我，提升你的 Python 程式設計能力！</p>
                         </div>
 
-                        <div class="maze-levels row">
+                        <!-- 只保留一層 maze-levels，裡面每個 maze-level 為一個區塊 -->
+                        <div class="maze-levels">
                             <div class="maze-level <?php echo $current_level < 2 ? 'locked' : ''; ?>" onclick="randomMaze(1, this)">
-                                <div class="maze-pattern"></div>
                                 <?php if ($current_level < 2): ?>
                                     <div class="level-lock"><i class="fas fa-lock"></i></div>
                                     <div class="level-required">需要等級 2</div>
@@ -90,9 +185,7 @@ $current_level = $_SESSION['level'];
                                 <div class="level-number">1</div>
                                 <div class="level-label">基礎迷宮</div>
                             </div>
-
                             <div class="maze-level <?php echo $current_level < 4 ? 'locked' : ''; ?>" onclick="randomMaze(2, this)">
-                                <div class="maze-pattern"></div>
                                 <?php if ($current_level < 4): ?>
                                     <div class="level-lock"><i class="fas fa-lock"></i></div>
                                     <div class="level-required">需要等級 4</div>
@@ -100,9 +193,7 @@ $current_level = $_SESSION['level'];
                                 <div class="level-number">2</div>
                                 <div class="level-label">函數迷宮</div>
                             </div>
-
                             <div class="maze-level <?php echo $current_level < 6 ? 'locked' : ''; ?>" onclick="randomMaze(3, this)">
-                                <div class="maze-pattern"></div>
                                 <?php if ($current_level < 6): ?>
                                     <div class="level-lock"><i class="fas fa-lock"></i></div>
                                     <div class="level-required">需要等級 6</div>
@@ -110,9 +201,7 @@ $current_level = $_SESSION['level'];
                                 <div class="level-number">3</div>
                                 <div class="level-label">數據迷宮</div>
                             </div>
-
                             <div class="maze-level <?php echo $current_level < 8 ? 'locked' : ''; ?>" onclick="randomMaze(4, this)">
-                                <div class="maze-pattern"></div>
                                 <?php if ($current_level < 8): ?>
                                     <div class="level-lock"><i class="fas fa-lock"></i></div>
                                     <div class="level-required">需要等級 8</div>
@@ -120,13 +209,10 @@ $current_level = $_SESSION['level'];
                                 <div class="level-number">4</div>
                                 <div class="level-label">檔案迷宮</div>
                             </div>
-
                             <div class="maze-level locked" onclick="randomMaze(5, this)">
-                                <div class="maze-pattern"></div>
-                                <div class="level-lock"><i class="fas fa-lock"></i></div>
-                                <div class="level-required">敬請期待</div>
                                 <div class="level-number">5</div>
                                 <div class="level-label">進階迷宮</div>
+                                <div class="level-required">敬請期待</div>
                             </div>
                         </div>
                     </div>
@@ -163,8 +249,10 @@ $current_level = $_SESSION['level'];
         </div>
     </div>
 
-    <script src="assets/js/quest.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="assets/js/quest.js">
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js">
+    </script>
     <script>
         function randomMaze(level, el) {
             // 若有 locked class，則不執行並提示

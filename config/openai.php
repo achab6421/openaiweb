@@ -5,6 +5,7 @@ class OpenAIConfig {
     private $apiKey;
     private $problemGeneratorAssistantId;
     private $solutionValidatorAssistantId;
+    private $codeEvaluationAssistantId;
     
     // 獲取API金鑰
     public function getApiKey() {
@@ -21,6 +22,11 @@ class OpenAIConfig {
         return $this->solutionValidatorAssistantId;
     }
     
+    // 獲取代碼評估助手ID
+    public function getCodeEvaluationAssistantId() {
+        return $this->codeEvaluationAssistantId;
+    }
+    
     // 設置API金鑰
     public function setApiKey($key) {
         $this->apiKey = $key;
@@ -34,6 +40,11 @@ class OpenAIConfig {
     // 設置解答驗證助手ID
     public function setSolutionValidatorAssistantId($id) {
         $this->solutionValidatorAssistantId = $id;
+    }
+    
+    // 設置代碼評估助手ID
+    public function setCodeEvaluationAssistantId($id) {
+        $this->codeEvaluationAssistantId = $id;
     }
     
     // 讀取環境變數中的配置信息
@@ -52,6 +63,10 @@ class OpenAIConfig {
         $this->solutionValidatorAssistantId = getenv('SOLUTION_VALIDATOR_ASSISTANT_ID') ?: 
                                              getenv('Codeevaluation') ?: 
                                              getenv('CODEEVALUATION') ?: $this->solutionValidatorAssistantId;
+                                             
+        $this->codeEvaluationAssistantId = getenv('CODE_EVALUATION_ASSISTANT_ID') ?: 
+                                           getenv('Codeevaluation') ?: 
+                                           getenv('CODEEVALUATION') ?: $this->codeEvaluationAssistantId;
     }
     
     // 讀取.env文件
