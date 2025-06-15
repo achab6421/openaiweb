@@ -148,6 +148,397 @@
     opacity: 0.9;
 }
 
+/* 經驗值相關樣式 */
+.exp-progress-container {
+    width: 100%;
+    height: 15px;
+    background-color: #333;
+    border-radius: 10px;
+    overflow: hidden;
+    margin: 10px 0;
+}
+
+.exp-progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #4fc3f7 0%, #2196f3 100%);
+    width: 0%;
+    transition: width 1s ease;
+}
+
+.exp-reward {
+    display: flex;
+    align-items: center;
+    margin: 10px 0;
+}
+
+.exp-icon {
+    width: 24px;
+    height: 24px;
+    background-color: #ffeb3b;
+    border-radius: 50%;
+    margin-right: 10px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-weight: bold;
+    color: #333;
+}
+
+/* 升級效果 */
+.level-up-effect {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(circle, rgba(255,215,0,0.3) 0%, rgba(0,0,0,0.7) 100%);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+    animation: levelUpBg 2s ease infinite;
+}
+
+.level-up-content {
+    background-color: rgba(0,0,0,0.8);
+    padding: 30px;
+    border-radius: 15px;
+    text-align: center;
+    border: 3px solid #ffd700;
+    box-shadow: 0 0 30px #ffd700;
+}
+
+.level-up-title {
+    font-size: 18px;
+    font-weight: bold;
+    color: #ffd700;
+    text-align: center;
+    margin-bottom: 10px;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.level-up-info {
+    background: rgba(255, 215, 0, 0.1);
+    border: 1px solid #997a00;
+    border-radius: 8px;
+    padding: 15px;
+    margin: 20px 0;
+}
+
+.level-up-details {
+    display: flex;
+    justify-content: space-around;
+    flex-wrap: wrap;
+}
+
+.new-level, .level-title {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 10px;
+}
+
+.level-label, .title-label {
+    font-size: 14px;
+    color: #d0c0a0;
+    margin-bottom: 5px;
+}
+
+.level-value {
+    font-size: 28px;
+    font-weight: bold;
+    color: #ffd700;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.title-value {
+    font-size: 18px;
+    font-weight: bold;
+    color: #ffcc66;
+}
+
+.exp-progress {
+    margin: 15px 0;
+}
+
+.exp-bar-container {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 5px;
+    padding: 10px;
+    border: 1px solid #595128;
+}
+
+.exp-label {
+    font-size: 14px;
+    color: #d0c0a0;
+    margin-bottom: 8px;
+}
+
+.exp-bar-wrapper {
+    height: 10px;
+    background-color: #333;
+    border-radius: 5px;
+    overflow: hidden;
+    margin-bottom: 8px;
+}
+
+.exp-bar {
+    height: 100%;
+    background: linear-gradient(to right, #4caf50, #8bc34a);
+    width: 0%;
+    transition: width 1s ease;
+}
+
+.exp-values {
+    font-size: 12px;
+    color: #d0c0a0;
+    text-align: right;
+}
+
+/* 狩獵成功畫面樣式 */
+.hunt-success-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: url('../assets/images/hunt-bg.jpg'), linear-gradient(rgba(0,0,0,0.85), rgba(0,0,0,0.95));
+    background-blend-mode: overlay;
+    background-size: cover;
+    background-position: center;
+    z-index: 1000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+}
+
+.hunt-success-container {
+    width: 90%;
+    max-width: 600px;
+    background: linear-gradient(135deg, #2d2510, #3a3121);
+    border-radius: 8px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8);
+    overflow: hidden;
+    transform: translateY(20px);
+    transition: transform 0.5s ease;
+    color: #e8d8c3;
+    border: 3px solid #996515;
+    position: relative;
+}
+
+.hunt-success-container::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: url('../assets/images/parchment-texture.png');
+    background-size: cover;
+    opacity: 0.05;
+    pointer-events: none;
+}
+
+.hunt-success-header {
+    background: linear-gradient(135deg, #4a3c21, #6b5a30);
+    padding: 20px;
+    text-align: center;
+    position: relative;
+    border-bottom: 2px solid #996515;
+}
+
+.hunt-header-decoration {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 5px 0;
+}
+
+.hunt-decoration-symbol {
+    font-size: 24px;
+    margin: 0 10px;
+}
+
+.hunt-decoration-line {
+    height: 2px;
+    background-color: #996515;
+    flex-grow: 1;
+    max-width: 100px;
+}
+
+.hunt-success-header h2 {
+    margin: 10px 0;
+    font-size: 32px;
+    color: #ffd700;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+    font-family: 'Cinzel', serif;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+}
+
+.hunt-success-content {
+    padding: 25px;
+}
+
+.hunt-monster-defeated {
+    text-align: center;
+    margin-bottom: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.monster-trophy {
+    font-size: 48px;
+    margin-bottom: 10px;
+    animation: trophy-bounce 2s infinite;
+}
+
+.defeat-text {
+    font-size: 20px;
+    font-weight: bold;
+    color: #e8d8c3;
+}
+
+.hunt-rewards-title {
+    text-align: center;
+    font-size: 22px;
+    margin: 20px 0 15px;
+    color: #ffd700;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+    font-family: 'Cinzel', serif;
+    position: relative;
+}
+
+.hunt-rewards-title:before,
+.hunt-rewards-title:after {
+    content: "◆";
+    color: #996515;
+    margin: 0 10px;
+    font-size: 14px;
+}
+
+.hunt-rewards {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 5px;
+    padding: 15px;
+    margin-bottom: 20px;
+    border: 1px solid #996515;
+}
+
+.reward-item {
+    display: flex;
+    align-items: center;
+    padding: 10px;
+    border-bottom: 1px solid rgba(153, 101, 21, 0.3);
+    position: relative;
+    counter-increment: reward-counter;
+}
+
+.reward-item:last-child {
+    border-bottom: none;
+}
+
+.reward-icon {
+    font-size: 24px;
+    margin-right: 15px;
+    color: #ffd700;
+}
+
+.reward-label {
+    flex-grow: 1;
+    font-size: 16px;
+    font-weight: bold;
+}
+
+.reward-value {
+    font-size: 18px;
+    font-weight: bold;
+    color: #4caf50;
+}
+
+.hunter-notes {
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 5px;
+    padding: 15px;
+    margin-top: 20px;
+    border: 1px dashed #996515;
+}
+
+.note-title {
+    font-size: 18px;
+    color: #ffd700;
+    margin-bottom: 10px;
+    font-family: 'Cinzel', serif;
+    display: flex;
+    align-items: center;
+}
+
+.note-title:before {
+    content: "📝";
+    margin-right: 10px;
+}
+
+.note-content {
+    font-size: 14px;
+    font-style: italic;
+    color: #d0c0a0;
+    line-height: 1.4;
+}
+
+.hunt-success-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    padding: 20px;
+    border-top: 2px solid rgba(153, 101, 21, 0.5);
+    background: rgba(0, 0, 0, 0.2);
+}
+
+.hunt-success-btn {
+    padding: 12px 20px;
+    border: none;
+    border-radius: 5px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-icon {
+    margin-right: 8px;
+    font-size: 18px;
+}
+
+.return-btn {
+    background: linear-gradient(to bottom, #7d5a26, #5b4115);
+    color: #e8d8c3;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    border: 1px solid #996515;
+}
+
+.return-btn:hover {
+    background: linear-gradient(to bottom, #996515, #7d5a26);
+    transform: translateY(-2px);
+}
+
+.retry-btn {
+    background: linear-gradient(to bottom, #3e5c28, #2b4116);
+    color: #e8d8c3;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+    border: 1px solid #4a6b21;
+}
+
+.retry-btn:hover {
+    background: linear-gradient(to bottom, #4a6b21, #3e5c28);
+    transform: translateY(-2px);
+}
+
 /* 動畫 */
 @keyframes fadeInOut {
     0% { opacity: 0; }
@@ -180,4 +571,88 @@
 @keyframes slideIn {
     from { transform: translate(-50%, -70%); opacity: 0; }
     to { transform: translate(-50%, -50%); opacity: 1; }
+}
+
+@keyframes levelUpBg {
+    0% { background-color: rgba(255,215,0,0.1); }
+    50% { background-color: rgba(255,215,0,0.3); }
+    100% { background-color: rgba(255,215,0,0.1); }
+}
+
+/* 動畫效果 */
+@keyframes trophy-shine {
+    0% { 
+        transform: scale(1); 
+        text-shadow: 0 0 5px rgba(255, 215, 0, 0.7);
+    }
+    50% { 
+        transform: scale(1.1); 
+        text-shadow: 0 0 20px rgba(255, 215, 0, 1);
+    }
+    100% { 
+        transform: scale(1); 
+        text-shadow: 0 0 5px rgba(255, 215, 0, 0.7);
+    }
+}
+
+/* 獎勵顯示動畫 */
+@keyframes reward-appear {
+    0% { 
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    100% { 
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.reward-item {
+    animation: reward-appear 0.5s forwards;
+    animation-delay: calc(0.2s * var(--index, 0));
+    opacity: 0;
+}
+
+/* 經驗值獲得效果 */
+.exp-gain {
+    position: absolute;
+    color: #4caf50;
+    font-weight: bold;
+    font-size: 24px;
+    animation: float-up 2s forwards;
+    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.7);
+    z-index: 100;
+}
+
+@keyframes float-up {
+    0% {
+        opacity: 0;
+        transform: translateY(0);
+    }
+    20% {
+        opacity: 1;
+    }
+    80% {
+        opacity: 1;
+    }
+    100% {
+        opacity: 0;
+        transform: translateY(-100px);
+    }
+}
+
+/* 確保按鈕在移動設備上也保持良好顯示 */
+@media (max-width: 768px) {
+    .hunt-success-container {
+        width: 95%;
+    }
+    
+    .hunt-success-buttons {
+        flex-direction: column;
+    }
+    
+    .hunt-success-btn {
+        width: 100%;
+        margin-bottom: 10px;
+    }
 }

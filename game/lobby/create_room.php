@@ -1,6 +1,10 @@
 <?php
 session_start();
+require_once __DIR__ . '/../../config/database.php';
+$db = new Database();         // ✅ 確保這行執行了
+$pdo = $db->getConnection();  // ✅ 這才會產生 $pdo
 $username = isset($_SESSION["username"]) ? $_SESSION["username"] : "訪客";
+$user_id = isset($_SESSION["user_id"]) ? intval($_SESSION["user_id"]) : 0;
 ?>
 <!DOCTYPE html>
 <html lang="zh-TW">
@@ -14,8 +18,12 @@ $username = isset($_SESSION["username"]) ? $_SESSION["username"] : "訪客";
             color: #fff;
             min-height: 100vh;
             margin: 0;
+            scrollbar-width: none;
             font-family: 'Noto Sans TC', 'Microsoft JhengHei', Arial, sans-serif;
         }
+        body::-webkit-scrollbar {
+            display: none; /* Chrome, Safari */
+            }
         .create-room-box {
             background: #232526;
             border-radius: 18px;
@@ -73,6 +81,30 @@ $username = isset($_SESSION["username"]) ? $_SESSION["username"] : "訪客";
         .form-check-input {
             border-radius: 3px;
         }
+        .dungeon-select-bar {
+            background: #232526;
+            border-radius: 12px;
+            padding: 18px 24px;
+            margin-bottom: 32px;
+            box-shadow: 0 2px 12px #0005;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            max-width: 480px;
+        }
+        .dungeon-select-bar label {
+            color: #fff;
+            font-weight: bold;
+            margin-bottom: 0;
+        }
+        .dungeon-select-bar select {
+            background: #363738;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            padding: 6px 18px;
+            font-size: 1.1rem;
+        }
         @media (max-width: 600px) {
             .create-room-box {
                 padding: 18px 8px 18px 8px;
@@ -86,10 +118,30 @@ $username = isset($_SESSION["username"]) ? $_SESSION["username"] : "訪客";
     </style>
 </head>
 <body>
-<div class="container-fluid min-vh-100 d-flex align-items-center justify-content-center">
+<div class="container-fluid min-vh-100 d-flex flex-column align-items-center justify-content-center">
+    <?php
+    // 取得副本列表
+    $dungeon_stmt = $pdo->prepare("SELECT id, name FROM dungeons ORDER BY id ASC");
+    $dungeon_stmt->execute();
+    $dungeon_list = $dungeon_stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    // 取得預設選擇
+    $selected_dungeon_id = isset($_GET['dungeon_id']) ? intval($_GET['dungeon_id']) : ($dungeon_list[0]['id'] ?? 0);
+    ?>
+    <form method="get" class="dungeon-select-bar mb-4">
+        <label for="dungeon_id">選擇副本：</label>
+        <select name="dungeon_id" id="dungeon_id" onchange="this.form.submit()">
+            <?php foreach ($dungeon_list as $d): ?>
+                <option value="<?= $d['id'] ?>" <?= $selected_dungeon_id == $d['id'] ? 'selected' : '' ?>>
+                    <?= htmlspecialchars($d['name']) ?>
+                </option>
+            <?php endforeach; ?>
+        </select>
+    </form>
     <div class="create-room-box w-100">
         <form id="createRoomForm" autocomplete="off">
             <div class="create-room-title text-center mb-4">建立房間</div>
+            <input type="hidden" name="dungeon_id" value="<?= $selected_dungeon_id ?>">
             <div class="mb-3">
                 <label for="roomName" class="form-label">房間名稱</label>
                 <input type="text" class="form-control" id="roomName" name="room_name" placeholder="請輸入房間名稱" required>
@@ -111,69 +163,54 @@ $username = isset($_SESSION["username"]) ? $_SESSION["username"] : "訪客";
                 </select>
             </div>
             <div class="d-flex justify-content-end gap-2 mt-4">
-                <button type="button" class="btn btn-cancel" onclick="window.location.href='index.php'">取消</button>
+                <button type="button" class="btn btn-cancel" onclick="window.location.href='dungeon_list.php'">取消</button>
                 <button type="submit" class="btn btn-create">建立</button>
             </div>
         </form>
     </div>
 </div>
-
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script>
-const firebaseConfig = {
-  apiKey: "AIzaSyCCLkT0VSweTF1-w_ecMybR7WdnvHs0oKA",
-  authDomain: "openai-dbd3b.firebaseapp.com",
-  databaseURL: "https://openai-dbd3b-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "openai-dbd3b",
-  storageBucket: "openai-dbd3b.appspot.com",
-  messagingSenderId: "977828405782",
-  appId: "1:977828405782:web:eeb71ec2d11c7edfa10b37",
-  measurementId: "G-Y5DJ7B9LXM"
-};
-firebase.initializeApp(firebaseConfig);
-const db = firebase.database();
-
 document.addEventListener('DOMContentLoaded', function () {
     const form = document.getElementById('createRoomForm');
     const roomPassword = document.getElementById('roomPassword');
     const privateRoom = document.getElementById('privateRoom');
-    const maxPlayers = document.getElementById('maxPlayers');
-
     privateRoom.addEventListener('change', function () {
         roomPassword.disabled = !this.checked;
         if (!this.checked) roomPassword.value = '';
     });
-
     form.addEventListener('submit', function (e) {
         e.preventDefault();
-        const name = form.querySelector('[name="room_name"]').value.trim();
-        const isPrivate = form.querySelector('[name="private_room"]').checked;
-        const password = form.querySelector('[name="room_password"]').value.trim();
-        const maxPlayersVal = form.querySelector('[name="max_players"]').value;
-        const roomId = Math.random().toString().slice(2, 9);
-
-        // firebase 寫入
-        db.ref('rooms/' + roomId).set({
-            name: name,
-            members: { ["<?php echo addslashes($username); ?>"]: true },
-            max_players: maxPlayersVal,
-            private: isPrivate,
-            password: isPrivate ? password : "",
-            createdAt: Date.now()
-        }).then(() => {
-            Swal.fire({
-                icon: 'success',
-                title: '房間建立成功！',
-                html: `<div>房間ID：<b>${roomId}</b><br>人數上限：${maxPlayersVal}人</div>`,
-                confirmButtonText: '進入房間'
-            }).then(() => {
-                window.location.href = `room.php?code=${roomId}`;
-            });
-        }).catch(() => {
-            Swal.fire({icon:'error', title:'房間建立失敗'});
+        const formData = new FormData(form);
+        fetch('/OPENAIWEB/api/create_room_api.php', {
+            method: 'POST',
+            body: formData
+        })
+        .then(res => res.text())
+        .then(text => {
+            try {
+                const data = JSON.parse(text);
+                if (data.success) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: '房間建立成功！',
+                        html: `邀請碼：<b>${data.invite_code}</b><br>人數上限：${data.max_members}人`,
+                        confirmButtonText: '進入房間'
+                    }).then(() => {
+                        window.location.href = `room.php?code=${data.invite_code}`;
+                    });
+                } else {
+                    Swal.fire({icon:'error', title:'房間建立失敗', text: data.message || '未知錯誤'});
+                }
+            } catch (err) {
+                console.error('無法解析 JSON：', text);
+                Swal.fire({icon:'error', title:'格式錯誤', text:'伺服器未回傳正確格式'});
+            }
+        })
+        .catch(err => {
+            console.error('Fetch 錯誤：', err);
+            Swal.fire({icon:'error', title:'建立失敗', text: err.message || '連線失敗'});
         });
     });
 });

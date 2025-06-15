@@ -1,6 +1,6 @@
 <?php
 // 生成Python題目的API
-header('Content-Type: application/json');
+header('Content-Type: application/json; charset=utf-8');
 
 // 檢查是否為AJAX請求
 if (!isset($_SERVER['HTTP_X_REQUESTED_WITH']) || strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) !== 'xmlhttprequest') {
@@ -77,6 +77,8 @@ if ($stmt->rowCount() == 0) {
 
 $levelInfo = $stmt->fetch(PDO::FETCH_ASSOC);
 
+// 確保此API能夠被重複調用來生成新問題
+
 // 創建OpenAI API請求
 $threadId = createThread($apiKey);
 if (!$threadId) {
@@ -122,7 +124,7 @@ echo json_encode([
     'success' => true,
     'problem' => $problem,
     'threadId' => $threadId
-]);
+], JSON_UNESCAPED_UNICODE);
 exit;
 
 // 以下是輔助函數
