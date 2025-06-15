@@ -152,8 +152,8 @@ $current_level = $_SESSION['level'];
             <nav class="main-nav">
                 <ul>
                     <li><a href="../../dashboard.php">主頁</a></li>
-                    <li><a href="profile.php">獵人檔案</a></li>
-                    <li><a href="achievements.php">成就系統</a></li>
+                    <li><a href="../../profile.php">獵人檔案</a></li>
+                    <li><a href="../../gachievements.php">成就系統</a></li>
                     <li><a href="../../game/maze/index.php">秘密任務</a></li>
                     <li><a href="../../game/lobby/index.php">多人副本</a></li>
                     <li><a href="../../api/logout.php">登出</a></li>
@@ -164,7 +164,8 @@ $current_level = $_SESSION['level'];
         <!-- 主內容區 -->
         <div class="main-content">
             <div class="quest-header">
-                <a href="../../dashboard.php" class="back-button"><i class="fas fa-arrow-left"></i> 返回章節列表</a>
+                <h1 class="quest-title"><i class="fas fa-treasure-chest me-2"></i>Python 程式迷宮</h1>
+                <p class="quest-description">探索充滿謎題與挑戰的程式迷宮，解開謎題、擊敗怪物、獲取寶藏！</p>
             </div>
 
             <div class="quest-container">

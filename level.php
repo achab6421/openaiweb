@@ -96,6 +96,7 @@ $monster_attack = $level['attack_power'];
 
 <!DOCTYPE html>
 <html lang="zh-TW">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -108,6 +109,7 @@ $monster_attack = $level['attack_power'];
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.1/codemirror.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.1/theme/dracula.min.css">
 </head>
+
 <body>
     <div class="battle-container">
         <!-- 上方狀態區 -->
@@ -140,15 +142,28 @@ $monster_attack = $level['attack_power'];
                 <div class="code-editor-container" style="height: 100px;">
                     <h3>Python 程式碼</h3>
                     <textarea id="code-editor"></textarea>
-                    <div class="editor-buttons">
-                        <button id="test-code" class="test-button">測試代碼</button>
-                        <button id="submit-code" class="submit-button">提交答案</button>
+
+
+                    <div class="editor-info" style="display: flex; gap: 24px; align-items: flex-start;">
+                        <!-- 右側：按鈕區 -->
+                        <div class="editor-buttons" style="flex: 1 1 0; display: flex; flex-direction: row; gap: 12px; justify-content: flex-start; align-items: stretch;">
+                            <button id="test-code" class="test-button" style="flex:1 1 50%;max-width:50%;height:48px;background:#3a8bfd;color:#fff;border:none;border-radius:8px 0 0 8px;padding:10px 0;font-size:1rem;cursor:pointer;margin:0;">測試代碼</button>
+                            <button id="submit-code" class="submit-button" style="flex:1 1 50%;max-width:50%;height:48px;background:#22c55e;color:#fff;border:none;border-radius:0 8px 8px 0;padding:10px 0;font-size:1rem;cursor:pointer;margin:0;">提交答案</button>
+                        </div>
                     </div>
+
                 </div>
 
-                <div class="output-container" style="height: 220px; margin-bottom: 100px;">
-                    <h3>執行結果</h3>
-                    <div id="output-display" class="output-display"></div>
+                <div class="output-container" style="height: 220px; margin-bottom: 100px; display: flex; gap: 24px; flex-direction: row;">
+                    <!-- 左側：多行輸入框 -->
+                    <div style="flex: 1 1 50%; max-width: 50%; display: flex; flex-direction: column; justify-content: flex-start;">
+                        <textarea id="editor-input" placeholder="請輸入你的答案..." style="width:100%;height:100%;min-height:80px;max-height:180px;padding:10px 14px;border-radius:8px;border:1px solid #333;background:#181c20;color:#fff;font-size:1rem;resize:vertical;"></textarea>
+                    </div>
+                    <!-- 右側：執行結果 -->
+                    <div style="flex: 1 1 50%; max-width: 50%; display: flex; flex-direction: column; justify-content: flex-start;">
+                        <h3 style="margin-bottom:8px;">執行結果</h3>
+                        <div id="output-display" class="output-display" style="flex:1;"></div>
+                    </div>
                 </div>
             </div>
 
@@ -159,12 +174,12 @@ $monster_attack = $level['attack_power'];
                     <div class="monsters-area" style="height: 30%;">
                         <div class="monster-unit" id="monster1">
                             <?php
-                                $monsterImage = "assets/images/monsters/monster-{$level['monster_id']}.png";
-                                if (!file_exists($monsterImage)) {
-                                    $monsterImage = $level['is_boss'] 
-                                        ? "assets/images/monsters/default-boss.png"
-                                        : "assets/images/monsters/default-monster.png";
-                                }
+                            $monsterImage = "assets/images/monsters/monster-{$level['monster_id']}.png";
+                            if (!file_exists($monsterImage)) {
+                                $monsterImage = $level['is_boss']
+                                    ? "assets/images/monsters/default-boss.png"
+                                    : "assets/images/monsters/default-monster.png";
+                            }
                             ?>
                             <div class="monster-name">草原林 <?= $level['is_boss'] ? 'BOSS' : 'A' ?></div>
                             <div class="monster-sprite">
@@ -178,24 +193,24 @@ $monster_attack = $level['attack_power'];
                                 </div>
                             </div>
                         </div>
-                        
+
                         <?php if ($level['wave_count'] > 1): ?>
-                        <div class="monster-unit" id="monster2">
-                            <div class="monster-name">草原林 B</div>
-                            <div class="monster-sprite">
-                                <img src="<?= $monsterImage ?>" alt="怪物" class="monster-image">
-                                <div class="monster-effects"></div>
-                            </div>
-                            <div class="monster-hp">
-                                <div class="hp-text">HP <span class="current-hp"><?= $monster_max_hp ?></span>/<?= $monster_max_hp ?></div>
-                                <div class="hp-bar">
-                                    <div class="hp-fill" style="width: 100%"></div>
+                            <div class="monster-unit" id="monster2">
+                                <div class="monster-name">草原林 B</div>
+                                <div class="monster-sprite">
+                                    <img src="<?= $monsterImage ?>" alt="怪物" class="monster-image">
+                                    <div class="monster-effects"></div>
+                                </div>
+                                <div class="monster-hp">
+                                    <div class="hp-text">HP <span class="current-hp"><?= $monster_max_hp ?></span>/<?= $monster_max_hp ?></div>
+                                    <div class="hp-bar">
+                                        <div class="hp-fill" style="width: 100%"></div>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
                         <?php endif; ?>
                     </div>
-                    
+
                     <!-- 角色區 -->
                     <div class="characters-area">
                         <div class="character-unit">
@@ -213,36 +228,36 @@ $monster_attack = $level['attack_power'];
                         </div>
                     </div>
                 </div>
-                
+
                 <div class="battle-message">
                     <div class="message-content" id="battle-message-content">
                         戰鬥開始！請編寫程式碼以擊敗怪物！
                     </div>
                 </div>
-                
+
                 <div class="battle-tutorial" style="height: 30%;">
                     <h3 class="tutorial-title"><i class="fas fa-book"></i> 學習指南</h3>
                     <div class="tutorial-content">
                         <?php if ($tutorial_stmt->rowCount() > 0): ?>
                             <div class="tutorial-tabs">
-                                <?php 
+                                <?php
                                 $tabIndex = 1;
                                 $tutorial_stmt->execute(); // 重新執行以重置指針
-                                while ($tutorial = $tutorial_stmt->fetch(PDO::FETCH_ASSOC)): 
+                                while ($tutorial = $tutorial_stmt->fetch(PDO::FETCH_ASSOC)):
                                 ?>
                                     <button class="tutorial-tab <?= $tabIndex == 1 ? 'active' : '' ?>" data-tab="tab-<?= $tabIndex ?>">
                                         <?= htmlspecialchars($tutorial['title']) ?>
                                     </button>
-                                <?php 
+                                <?php
                                     $tabIndex++;
-                                endwhile; 
+                                endwhile;
                                 ?>
                             </div>
                             <div class="tutorial-panels">
-                                <?php 
+                                <?php
                                 $panelIndex = 1;
                                 $tutorial_stmt->execute(); // 再次重新執行
-                                while ($tutorial = $tutorial_stmt->fetch(PDO::FETCH_ASSOC)): 
+                                while ($tutorial = $tutorial_stmt->fetch(PDO::FETCH_ASSOC)):
                                 ?>
                                     <div class="tutorial-panel <?= $panelIndex == 1 ? 'active' : '' ?>" id="tab-<?= $panelIndex ?>">
                                         <div class="tutorial-text">
@@ -254,9 +269,9 @@ $monster_attack = $level['attack_power'];
                                             </div>
                                         <?php endif; ?>
                                     </div>
-                                <?php 
+                                <?php
                                     $panelIndex++;
-                                endwhile; 
+                                endwhile;
                                 ?>
                             </div>
                         <?php else: ?>
@@ -268,7 +283,7 @@ $monster_attack = $level['attack_power'];
             </div>
         </div>
     </div>
-    
+
     <!-- 戰鬥結果彈窗 -->
     <div class="battle-modal" id="result-modal">
         <div class="modal-content">
@@ -297,7 +312,7 @@ $monster_attack = $level['attack_power'];
     <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.1/addon/edit/matchbrackets.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.3.1/highlight.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.3.1/languages/python.min.js"></script>
-    
+
     <script>
         // 關卡和怪物數據
         const levelData = {
@@ -313,7 +328,8 @@ $monster_attack = $level['attack_power'];
             isBoss: <?= $level['is_boss'] ? 'true' : 'false' ?>,
         };
     </script>
-    
+
     <script src="assets/js/battle.js"></script>
 </body>
+
 </html>

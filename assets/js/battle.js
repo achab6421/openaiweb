@@ -1,4 +1,4 @@
-// Python 怪物村戰鬥和程式編輯功能
+// Python 怪物村戰鬼和程式編輯功能
 
 // 全局變量
 let editor;
@@ -110,29 +110,45 @@ function extractCodeFramework(problem) {
 
 // 測試程式碼
 function testCode() {
-    const code = editor.getValue();
+    // 取得主編輯器內容
+    let code = editor.getValue();
+    // 取得多行輸入框內容
+    const inputValue = document.getElementById('editor-input') ? document.getElementById('editor-input').value : '';
     const outputDisplay = document.getElementById('output-display');
-    
+
+    // 將多行輸入框內容依行分割，模擬多次 input()
+    const inputLines = inputValue.split(/\r?\n/);
+    let inputIndex = 0;
+    // 用唯一字串暫時替換 input()
+    const inputPlaceholder = '__AI_INPUT_PLACEHOLDER__';
+    code = code.replace(/input\s*\(\s*\)/g, inputPlaceholder);
+
+    // 依序替換每個 input() 為對應行
+    code = code.replace(new RegExp(inputPlaceholder, 'g'), function() {
+        // 若超過輸入行數則給空字串
+        return JSON.stringify(inputLines[inputIndex++] ?? '');
+    });
+
     if (!code.trim()) {
         outputDisplay.innerHTML = '請先編寫程式碼';
         outputDisplay.classList.add('error');
         return;
     }
-    
+
     // 顯示測試中...
     outputDisplay.innerHTML = '<div class="loading">測試運行中...</div>';
     outputDisplay.classList.remove('error');
-    
+
     // 添加測試調試日誌
-    console.log('測試代碼請求開始，代碼長度:', code.length);
-    
+    console.log('測試代碼請求開始，代碼長度:', code.length, '輸入框內容:', inputValue);
+
     // 使用XMLHttpRequest而不是fetch，因為可能有瀏覽器兼容性問題
     const xhr = new XMLHttpRequest();
     xhr.open('POST', 'api/test-code.php', true);
     xhr.setRequestHeader('Content-Type', 'application/json;charset=UTF-8');
     xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
     xhr.responseType = 'json';
-    
+
     xhr.onload = function() {
         if (xhr.status >= 200 && xhr.status < 300) {
             console.log('測試代碼請求成功:', xhr.response);
@@ -187,12 +203,13 @@ function testCode() {
         outputDisplay.innerHTML = '網絡錯誤，無法連接到伺服器';
         outputDisplay.classList.add('error');
     };
-    
+
     const data = JSON.stringify({
         code: code,
-        levelId: levelData.levelId || 0
+        levelId: levelData.levelId || 0,
+        input: inputValue // 仍保留原始輸入框內容
     });
-    
+
     console.log('發送請求數據...');
     xhr.send(data);
 }
