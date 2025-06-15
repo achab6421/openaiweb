@@ -1,72 +1,72 @@
 <?php
-// 完成關卡和解鎖下一關的API
-header('Content-Type: application/json; charset=utf-8');
-
-// 檢查是否為AJAX請求
-if (!isset($_SERVER['HTTP_X_REQUESTED_WITH']) || strtolower($_SERVER['HTTP_X_REQUESTED_WITH']) !== 'xmlhttprequest') {
-    echo json_encode([
-        'success' => false,
-        'message' => 'Invalid request',
-    ], JSON_UNESCAPED_UNICODE);
-    exit;
-}
-
-// 檢查會話
 session_start();
+header('Content-Type: application/json');
 if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
-    echo json_encode([
-        'success' => false,
-        'message' => 'User not logged in',
-    ], JSON_UNESCAPED_UNICODE);
+    echo json_encode(['success' => false, 'message' => '未登入']);
     exit;
 }
+require_once "../config/database.php";
+$db = (new Database())->getConnection();
 
-// 解析請求數據
 $data = json_decode(file_get_contents('php://input'), true);
+$levelId = isset($data['levelId']) ? intval($data['levelId']) : 0;
+$chapterId = isset($data['chapterId']) ? intval($data['chapterId']) : 0;
+$userId = $_SESSION['user_id'];
 
-// 檢查請求數據的完整性
-if (!isset($data['levelId']) || !is_numeric($data['levelId'])) {
-    echo json_encode([
-        'success' => false,
-        'message' => 'Missing required data fields',
-    ], JSON_UNESCAPED_UNICODE);
+if (!$levelId || !$chapterId) {
+    echo json_encode(['success' => false, 'message' => '參數錯誤']);
     exit;
 }
 
-$levelId = intval($data['levelId']);
-$chapterId = isset($data['chapterId']) ? intval($data['chapterId']) : null;
-$userId = intval($_SESSION['user_id']); // 確保使用整數類型
+// 標記關卡完成
+$stmt = $db->prepare("UPDATE player_level_records SET success_count = success_count + 1 WHERE player_id = ? AND level_id = ?");
+$stmt->execute([$userId, $levelId]);
 
-// 包含資料庫連接
-require_once '../config/database.php';
+// 查詢下一關
+$nextLevelStmt = $db->prepare("SELECT level_id FROM levels WHERE chapter_id = ? AND level_id > ? ORDER BY level_id ASC LIMIT 1");
+$nextLevelStmt->execute([$chapterId, $levelId]);
+$nextLevel = $nextLevelStmt->fetch(PDO::FETCH_ASSOC);
 
-$database = new Database();
-$db = $database->getConnection();
-
-try {
-    // 開始交易前先檢查玩家是否存在
-    $checkPlayerQuery = "SELECT * FROM players WHERE player_id = ?";
-    $checkPlayerStmt = $db->prepare($checkPlayerQuery);
-    $checkPlayerStmt->execute([$userId]);
-    
-    if ($checkPlayerStmt->rowCount() == 0) {
-        // 創建測試玩家
-        $createPlayerQuery = "INSERT INTO players (player_id, username, account, password, level, attack_power, base_hp) 
-                            VALUES (?, ?, ?, ?, ?, ?, ?)";
-        $createPlayerStmt = $db->prepare($createPlayerQuery);
-        $createPlayerStmt->execute([
-            $userId,
-            $_SESSION['username'] ?? '測試玩家',
-            'test_account_' . $userId,
-            password_hash('test_password', PASSWORD_DEFAULT),
-            $_SESSION['level'] ?? 1,
-            $_SESSION['attack_power'] ?? 10,
-            $_SESSION['base_hp'] ?? 100
-        ]);
-        
-        error_log("Created test player with ID: $userId");
+// 若有下一關，解鎖
+$unlockedLevels = [];
+if ($nextLevel) {
+    $nextLevelId = $nextLevel['level_id'];
+    // 檢查是否已存在紀錄
+    $checkStmt = $db->prepare("SELECT * FROM player_level_records WHERE player_id = ? AND level_id = ?");
+    $checkStmt->execute([$userId, $nextLevelId]);
+    if ($checkStmt->rowCount() == 0) {
+        // 新增紀錄並解鎖
+        $insertStmt = $db->prepare("INSERT INTO player_level_records (player_id, level_id, attempt_count, success_count) VALUES (?, ?, 0, 0)");
+        $insertStmt->execute([$userId, $nextLevelId]);
     }
+    $unlockedLevels[] = $nextLevelId;
+}
 
+// 若本章節所有關卡皆完成，標記章節完成
+$allLevelsStmt = $db->prepare("SELECT level_id FROM levels WHERE chapter_id = ?");
+$allLevelsStmt->execute([$chapterId]);
+$allLevelIds = $allLevelsStmt->fetchAll(PDO::FETCH_COLUMN);
+
+$completedStmt = $db->prepare("SELECT level_id FROM player_level_records WHERE player_id = ? AND success_count > 0 AND level_id IN (" . implode(',', $allLevelIds) . ")");
+$completedStmt->execute([$userId]);
+$completedLevelIds = $completedStmt->fetchAll(PDO::FETCH_COLUMN);
+
+$completedChapter = false;
+if (count($allLevelIds) > 0 && count($allLevelIds) === count($completedLevelIds)) {
+    // 標記章節完成
+    $updateChapterStmt = $db->prepare("UPDATE player_chapter_records SET is_completed = 1 WHERE player_id = ? AND chapter_id = ?");
+    $updateChapterStmt->execute([$userId, $chapterId]);
+    $completedChapter = $chapterId;
+}
+
+// 經驗值獎勵與升級邏輯略（如有需要可補充）
+
+echo json_encode([
+    'success' => true,
+    'unlockedLevels' => $unlockedLevels,
+    'completedChapter' => $completedChapter
+]);
+?>
     // 確保 experience 列存在
     try {
         $checkColumnQuery = "SHOW COLUMNS FROM players LIKE 'experience'";
