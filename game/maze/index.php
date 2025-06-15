@@ -151,11 +151,11 @@ $current_level = $_SESSION['level'];
             </div>
             <nav class="main-nav">
                 <ul>
-                    <li><a href="dashboard.php">主頁</a></li>
+                    <li><a href="../../dashboard.php">主頁</a></li>
                     <li><a href="profile.php">獵人檔案</a></li>
                     <li><a href="achievements.php">成就系統</a></li>
                     <li><a href="game/maze/index.php">秘密任務</a></li>
-                    <li><a href="api/logout.php">登出</a></li>
+                    <li><a href="../../api/logout.php">登出</a></li>
                 </ul>
             </nav>
         </div>
@@ -163,7 +163,7 @@ $current_level = $_SESSION['level'];
         <!-- 主內容區 -->
         <div class="main-content">
             <div class="quest-header">
-                <a href="dashboard.php" class="back-button"><i class="fas fa-arrow-left"></i> 返回章節列表</a>
+                <a href="../../dashboard.php" class="back-button"><i class="fas fa-arrow-left"></i> 返回章節列表</a>
             </div>
 
             <div class="quest-container">

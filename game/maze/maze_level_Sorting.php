@@ -243,6 +243,8 @@ if ($current_level < $level_info['required']) {
 </head>
 
 <body>
+    <?php include '/OPENAI/ai.php'; ?>
+
     <div class="battle-container">
         <div class="battle-header">
             <div class="header-info">
@@ -305,6 +307,11 @@ if ($current_level < $level_info['required']) {
                     $('#question-area').html(
                         '<div>' + (data.question_text ? data.question_text.replace(/\n/g, '<br>') : '題目載入失敗') + '</div>'
                     );
+                    // --- 將題目內容傳給 AI 助理 ---
+                    if (window.aiReceiveMazeQuestion) {
+                        window.aiReceiveMazeQuestion(data.question_text);
+                    }
+                    // --- end ---
                     if (data.options_arr && Object.keys(data.options_arr).length > 0) {
                         let html = '<div class="card-header bg-warning text-dark fw-bold">選項</div>';
                         html += '<div class="card-body"><form class="mt-2" id="sortableForm"><ul id="sortable-options" class="list-group">';
