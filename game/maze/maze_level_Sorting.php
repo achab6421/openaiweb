@@ -243,7 +243,7 @@ if ($current_level < $level_info['required']) {
 </head>
 
 <body>
-    <?php include '/OPENAI/ai.php'; ?>
+    <?php include '../../ai.php'; ?>
 
     <div class="battle-container">
         <div class="battle-header">

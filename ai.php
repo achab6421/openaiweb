@@ -161,6 +161,26 @@ EOT;
         .ai-chat-input-area button:hover {
             background: #2563eb;
         }
+        .ai-suggested-questions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin: 10px 0 0 0;
+        }
+        .ai-suggested-questions button {
+            background: #222;
+            color: #3a8bfd;
+            border: 1px solid #3a8bfd;
+            border-radius: 16px;
+            padding: 6px 16px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background 0.15s, color 0.15s;
+        }
+        .ai-suggested-questions button:hover {
+            background: #3a8bfd;
+            color: #fff;
+        }
         @media (max-width: 600px) {
             .ai-chat-container {
                 right: 8px;
@@ -227,6 +247,29 @@ EOT;
             var chatInput = document.getElementById('chatInput');
             var chatBox = document.getElementById('chatMessages');
 
+            // 建立建議問題區塊
+            function renderSuggestedQuestions(questions) {
+                // 移除舊的
+                var old = document.getElementById('aiSuggestedQuestions');
+                if (old) old.remove();
+                if (!questions || !questions.length) return;
+                var wrap = document.createElement('div');
+                wrap.className = 'ai-suggested-questions';
+                wrap.id = 'aiSuggestedQuestions';
+                questions.forEach(function(q) {
+                    var btn = document.createElement('button');
+                    btn.type = 'button';
+                    btn.textContent = q;
+                    btn.onclick = function() {
+                        chatInput.value = q;
+                        chatInput.focus();
+                    };
+                    wrap.appendChild(btn);
+                });
+                chatBox.appendChild(wrap);
+                chatBox.scrollTop = chatBox.scrollHeight;
+            }
+
             function sendMessage() {
                 var userMsg = chatInput.value.trim();
                 if (!userMsg) return;
@@ -236,6 +279,10 @@ EOT;
                 userDiv.innerHTML = '<div class="bubble">' + userMsg + '</div>';
                 chatBox.appendChild(userDiv);
                 chatBox.scrollTop = chatBox.scrollHeight;
+
+                // 移除建議問題
+                var old = document.getElementById('aiSuggestedQuestions');
+                if (old) old.remove();
 
                 // 準備送出內容
                 var mazeQ = window._mazeQuestionText ? ("\n\n【本次挑戰題目】\n" + window._mazeQuestionText) : "";
@@ -251,7 +298,7 @@ EOT;
                 // 清空輸入框
                 chatInput.value = '';
 
-                // 呼叫本地 proxy 來安全地使用 API KEY，帶入 system_prompt
+                // 第一次先請 AI 產生建議問題，再請 AI 正常回答
                 fetch('/OPENAI/ai_proxy.php', {
                     method: 'POST',
                     headers: {
@@ -259,11 +306,11 @@ EOT;
                     },
                     body: JSON.stringify({
                         input: fullMsg,
-                        system_prompt: <?php echo json_encode($system_prompt); ?>
+                        system_prompt: <?php echo json_encode($system_prompt); ?>,
+                        suggest_questions: true
                     })
                 })
                 .then(response => {
-                    // 檢查 HTTP 狀態
                     if (!response.ok) {
                         return response.text().then(text => {
                             throw new Error('HTTP ' + response.status + ': ' + text);
@@ -272,9 +319,34 @@ EOT;
                     return response.json();
                 })
                 .then(data => {
-                    console.log('AI 回傳:', data); // debug
+                    // 顯示建議問題
+                    if (data && data.suggested_questions && Array.isArray(data.suggested_questions) && data.suggested_questions.length) {
+                        renderSuggestedQuestions(data.suggested_questions);
+                    }
+                    // 再請 AI 正常回答（不帶 suggest_questions）
+                    return fetch('/OPENAI/ai_proxy.php', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            input: fullMsg,
+                            system_prompt: <?php echo json_encode($system_prompt); ?>
+                        })
+                    });
+                })
+                .then(response => {
+                    if (!response) return;
+                    if (!response.ok) {
+                        return response.text().then(text => {
+                            throw new Error('HTTP ' + response.status + ': ' + text);
+                        });
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (!data) return;
                     let reply = '';
-                    // 處理 output 為 array 的情況（如 OpenAI chat/completions 格式）
                     if (data && Array.isArray(data.output)) {
                         if (data.output.length > 0 && data.output[0].content) {
                             if (typeof data.output[0].content === 'string') {
@@ -298,7 +370,6 @@ EOT;
                     } else {
                         reply = 'AI 回覆失敗，請稍後再試。';
                     }
-                    // 若有 debug 訊息也顯示
                     if (data && data.debug) {
                         reply += "<br><br><b>Debug:</b><br>" + JSON.stringify(data.debug, null, 2);
                     }

@@ -20,10 +20,12 @@ if (!$OPENAI_API_KEY) {
 }
 $input = '';
 $system_prompt = '';
+$suggest_questions = false;
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $data = json_decode(file_get_contents('php://input'), true);
     $input = isset($data['input']) ? $data['input'] : '';
     $system_prompt = isset($data['system_prompt']) ? $data['system_prompt'] : '';
+    $suggest_questions = !empty($data['suggest_questions']);
 }
 if (!$input) {
     echo json_encode(['output' => '請輸入內容']);
@@ -31,20 +33,24 @@ if (!$input) {
 }
 
 // 若有 system_prompt，包成 messages 格式
+$messages = [];
 if ($system_prompt) {
-    $payload = [
-        'model' => 'gpt-4.1',
-        'messages' => [
-            ['role' => 'system', 'content' => $system_prompt],
-            ['role' => 'user', 'content' => $input]
-        ]
-    ];
-} else {
-    $payload = [
-        'model' => 'gpt-4.1',
-        'input' => $input
+    $messages[] = ['role' => 'system', 'content' => $system_prompt];
+}
+$messages[] = ['role' => 'user', 'content' => $input];
+
+// 若需要建議問題，加入 assistant 指令
+if ($suggest_questions) {
+    $messages[] = [
+        'role' => 'assistant',
+        'content' => '請根據上方題目與提問，額外產生 3 個使用者可能會問的相關問題，僅以 JSON 陣列輸出（如 ["問題1","問題2","問題3"]），不要有多餘說明。'
     ];
 }
+
+$payload = [
+    'model' => 'gpt-4.1',
+    'messages' => $messages
+];
 $ch = curl_init('https://api.openai.com/v1/chat/completions');
 curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 curl_setopt($ch, CURLOPT_HTTPHEADER, [
@@ -66,8 +72,27 @@ if ($curl_errno) {
 
 $response = json_decode($result, true);
 // 支援 chat/completions 格式
+$suggested_questions = [];
+if (
+    isset($response['choices'][0]['message']['content']) &&
+    $suggest_questions
+) {
+    // 嘗試解析最後一段 assistant 回覆為 JSON 陣列
+    $content = $response['choices'][0]['message']['content'];
+    if (preg_match('/\[(.*?)\]/s', $content, $m)) {
+        $json = '[' . $m[1] . ']';
+        $arr = json_decode($json, true);
+        if (is_array($arr)) {
+            $suggested_questions = $arr;
+        }
+    }
+}
+
 if (isset($response['choices'][0]['message']['content'])) {
-    echo json_encode(['output' => $response['choices'][0]['message']['content']]);
+    echo json_encode([
+        'output' => $response['choices'][0]['message']['content'],
+        'suggested_questions' => $suggested_questions
+    ]);
 } elseif (isset($response['output'])) {
     echo json_encode(['output' => $response['output']]);
 } else {
