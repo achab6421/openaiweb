@@ -111,6 +111,8 @@ $monster_attack = $level['attack_power'];
 </head>
 
 <body>
+    <?php include 'ai.php'; ?>
+
     <div class="battle-container">
         <!-- 上方狀態區 -->
         <div class="battle-header">
@@ -331,5 +333,4 @@ $monster_attack = $level['attack_power'];
 
     <script src="assets/js/battle.js"></script>
 </body>
-
 </html>

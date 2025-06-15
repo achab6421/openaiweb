@@ -84,6 +84,12 @@ function loadProblem() {
             
             // 顯示戰鬥消息
             updateBattleMessage('題目已載入，請編寫程式碼來擊敗怪物！');
+
+            // --- 將題目內容傳給 AI 助理 ---
+            if (window.aiReceiveMazeQuestion) {
+                window.aiReceiveMazeQuestion(data.problem);
+            }
+            // --- end ---
         } else {
             outputDisplay.innerHTML = `<div class="error">載入題目失敗: ${data.message}</div>`;
             updateBattleMessage('載入題目失敗，請重新整理頁面。');
