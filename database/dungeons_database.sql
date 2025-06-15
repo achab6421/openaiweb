@@ -54,3 +54,16 @@ CREATE TABLE player_dungeon_records (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 ALTER TABLE teams ADD COLUMN dungeon_id INT;
+
+
+-- ✅ 在 levels 資料表中新增 dungeon_id 欄位，用來表示每個關卡所屬的副本編號
+--    這樣就能透過 dungeon_id 快速查詢某副本底下的所有關卡
+ALTER TABLE levels ADD COLUMN dungeon_id INT NULL COMMENT '所屬副本ID';
+
+-- ✅ 為 dungeon_id 欄位建立索引，加快查詢效率
+--    尤其當你使用 WHERE dungeon_id = ? 查詢時，會有明顯效能提升
+ALTER TABLE levels ADD INDEX idx_dungeon_id (dungeon_id);
+
+-- ✅ 實作建議：
+--    你可以在建立關卡或修改關卡資料時，記得一併指定對應的 dungeon_id（副本編號）
+--    例如關卡 1~3 屬於副本 1，就把這三筆資料的 dungeon_id 都設為 1

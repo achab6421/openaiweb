@@ -1,0 +1,179 @@
+/* 美化返回大廳按鈕，並固定於右上角 */
+
+.roomlist-back-lobby {
+    position: absolute;
+    
+
+    z-index: 100;
+    
+}
+.roomlist-back-lobby .btn {
+    font-size: 1.05rem;
+    padding: 6px 18px;
+    border-radius: 8px;
+    background: linear-gradient(90deg,#232526 60%,#181210 100%);
+    color: #ffe4b5;
+    border: 2px solid #ffb84d;
+    font-weight: bold;
+    letter-spacing: 1px;
+    box-shadow: 0 2px 8px #0006;
+    transition: background 0.2s, border 0.2s, color 0.2s;
+    position: relative;
+    right: -151px;
+    bottom: -6px;
+
+
+}
+.roomlist-back-lobby .btn:hover {
+    background: #2d2113;
+    color: #fffbe6;
+    border-color: #ffe4b5;
+}
+    :root {
+            --primary-color: #8b0000;
+            --secondary-color: #3d1c02;
+            --dark-bg: #1a1a1a;
+            --dark-accent: #2d2d2d;
+            --light-accent: #4a3f35;
+            --text-light: #d4c8b8;
+            --text-dark: #242424;
+            --highlight: #ff4000;
+            --shadow-color: rgba(0, 0, 0, 0.7);
+            --border-color: #534b42;
+        }
+        body {
+            background: var(--dark-bg);
+            color: var(--text-light);
+            min-height: 100vh;
+            margin: 0;
+            font-family: 'Noto Sans TC', 'Microsoft JhengHei', Arial, sans-serif;
+        }
+        .room-list-modal {
+            background: var(--dark-accent);
+            border-radius: 18px;
+            padding: 38px 38px 28px 38px;
+            max-width: 1200px;
+            box-shadow: 0 8px 32px var(--shadow-color);
+            margin: 40px auto;
+        }
+        .room-list-title {
+            font-size: 2rem;
+            font-weight: bold;
+            margin-bottom: 28px;
+            color: var(--text-light);
+        }
+        .room-card-list {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+        .room-card-row {
+            display: flex;
+            gap: 24px;
+            justify-content: flex-start;
+        }
+        .room-card {
+            background: var(--light-accent);
+            border-radius: 16px;
+            box-shadow: 0 4px 16px var(--shadow-color);
+            padding: 32px 32px 24px 32px;
+            min-width: 180px;
+            max-width: 220px;
+            flex: 1 1 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 0;
+        }
+        .room-card .room-name {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: var(--text-light);
+            margin-bottom: 12px;
+            text-align: center;
+            text-shadow: 0 2px 8px #0008;
+        }
+        .badge-public {
+            background: var(--primary-color);
+            color: var(--text-light);
+            font-size: 0.98em;
+            padding: 4px 16px;
+            border-radius: 12px;
+            margin-bottom: 10px;
+            display: inline-block;
+        }
+        .badge-private {
+            background: var(--highlight);
+            color: var(--text-light);
+            font-size: 0.98em;
+            padding: 4px 16px;
+            border-radius: 12px;
+            margin-bottom: 10px;
+            display: inline-block;
+        }
+        .badge-private i {
+            margin-left: 4px;
+        }
+        .room-card .room-count {
+            font-size: 1.1rem;
+            color: var(--text-light);
+            margin-bottom: 18px;
+            font-weight: bold;
+            letter-spacing: 1px;
+        }
+        .room-card .btn-join,
+        .modal-footer .btn-join {
+            background: var(--primary-color);
+            color: #fff !important;
+            border-radius: 8px;
+            min-width: 120px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            margin-top: 10px;
+        }
+        .room-card .btn-join:active,
+        .modal-footer .btn-join:active {
+            filter: brightness(0.95);
+        }
+        
+        .room-card .text-danger {
+            color: var(--highlight);
+            margin-top: 10px;
+            font-size: 1.1rem;
+        }
+        @media (max-width: 1200px) {
+            .room-list-modal {
+                max-width: 98vw;
+                padding: 18px 8px 18px 8px;
+            }
+            .room-card-list {
+                gap: 12px;
+            }
+            .room-card-row {
+                gap: 12px;
+            }
+            .room-card {
+                min-width: 120px;
+                max-width: 100vw;
+                padding: 18px 8px 18px 8px;
+            }
+        }
+        @media (max-width: 900px) {
+            .room-card-row {
+                flex-wrap: wrap;
+            }
+            .room-card {
+                min-width: 40vw;
+                max-width: 48vw;
+            }
+        }
+        @media (max-width: 700px) {
+            .room-card-row {
+                flex-direction: column;
+                gap: 12px;
+            }
+            .room-card {
+                min-width: 90vw;
+                max-width: 98vw;
+            }
+        }

@@ -1,0 +1,149 @@
+body {
+    background: #111;
+    color: #fff;
+    min-height: 100vh;
+    margin: 0;
+    font-family: 'Noto Sans TC', 'Microsoft JhengHei', Arial, sans-serif;
+}
+.room-main {
+    background: #232526;
+    border-radius: 18px;
+    box-shadow: 0 8px 32px #0007;
+    max-width: 600px;
+    min-width: 350px;
+    margin: 40px auto;
+    padding: 0;
+    position: relative;
+}
+.room-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 38px 38px 0 38px;
+}
+.room-title {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #fff;
+    margin-bottom: 8px;
+}
+.room-code-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.room-code-label {
+    color: #bfc9d1;
+    font-weight: 500;
+}
+.room-people {
+    background: #181a1b;
+    border-radius: 8px;
+    padding: 6px 18px;
+    font-weight: bold;
+    color: #bfc9d1;
+    font-size: 1.1rem;
+}
+.room-body {
+    padding: 0 38px;
+}
+.room-member-title, .room-setting-title {
+    font-size: 1.1rem;
+    font-weight: bold;
+    margin-top: 32px;
+    margin-bottom: 10px;
+    color: #fff;
+}
+.member-list {
+    background: #363738;
+    border-radius: 8px;
+    padding: 10px 0;
+    margin-bottom: 18px;
+}
+.member-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 24px;
+    color: #fff;
+}
+.member-card:not(:last-child) {
+    border-bottom: 1px solid #444;
+}
+.member-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.badge-owner {
+    background: #2257e7;
+    color: #fff;
+    margin-right: 8px;
+    font-size: 0.95em;
+    padding: 2px 8px;
+    border-radius: 6px;
+}
+.btn-kick {
+    background: #e74c3c;
+    color: #fff;
+    border-radius: 6px;
+    border: none;
+    padding: 4px 18px;
+    font-size: 1rem;
+}
+.btn-kick:hover {
+    background: #c0392b;
+}
+.btn-transfer {
+    background: #4a90e2;
+    color: #fff;
+    border-radius: 6px;
+    border: none;
+    padding: 4px 18px;
+    margin-left: 8px;
+    font-size: 1rem;
+}
+.btn-transfer:hover {
+    background: #2257e7;
+}
+.room-setting-row {
+    margin-top: 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.btn-setting {
+    margin-left: 10px;
+}
+.room-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    padding: 28px 38px 28px 38px;
+}
+.btn-battle {
+    background: #2257e7;
+    color: #fff;
+    border-radius: 8px;
+    min-width: 120px;
+    font-weight: bold;
+}
+.btn-battle:active {
+    filter: brightness(0.95);
+}
+@media (max-width: 600px) {
+    .room-main {
+        padding: 0;
+        min-width: unset;
+        max-width: 98vw;
+    }
+    .room-header, .room-body, .room-footer {
+        padding: 18px 8px 0 8px;
+    }
+    .room-title {
+        font-size: 1.3rem;
+    }
+    .room-people {
+        margin-top: 10px;
+    }
+}

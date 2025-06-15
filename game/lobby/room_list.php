@@ -81,160 +81,19 @@ if ($selected_dungeon_id) {
     <title>房間列表</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
-    <style>
-        :root {
-            --primary-color: #8b0000;
-            --secondary-color: #3d1c02;
-            --dark-bg: #1a1a1a;
-            --dark-accent: #2d2d2d;
-            --light-accent: #4a3f35;
-            --text-light: #d4c8b8;
-            --text-dark: #242424;
-            --highlight: #ff4000;
-            --shadow-color: rgba(0, 0, 0, 0.7);
-            --border-color: #534b42;
-        }
-        body {
-            background: var(--dark-bg);
-            color: var(--text-light);
-            min-height: 100vh;
-            margin: 0;
-            font-family: 'Noto Sans TC', 'Microsoft JhengHei', Arial, sans-serif;
-        }
-        .room-list-modal {
-            background: var(--dark-accent);
-            border-radius: 18px;
-            padding: 38px 38px 28px 38px;
-            max-width: 1200px;
-            box-shadow: 0 8px 32px var(--shadow-color);
-            margin: 40px auto;
-        }
-        .room-list-title {
-            font-size: 2rem;
-            font-weight: bold;
-            margin-bottom: 28px;
-            color: var(--text-light);
-        }
-        .room-card-list {
-            display: flex;
-            flex-direction: column;
-            gap: 24px;
-        }
-        .room-card-row {
-            display: flex;
-            gap: 24px;
-            justify-content: flex-start;
-        }
-        .room-card {
-            background: var(--light-accent);
-            border-radius: 16px;
-            box-shadow: 0 4px 16px var(--shadow-color);
-            padding: 32px 32px 24px 32px;
-            min-width: 180px;
-            max-width: 220px;
-            flex: 1 1 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            margin-bottom: 0;
-        }
-        .room-card .room-name {
-            font-size: 1.3rem;
-            font-weight: bold;
-            color: var(--text-light);
-            margin-bottom: 12px;
-            text-align: center;
-            text-shadow: 0 2px 8px #0008;
-        }
-        .badge-public {
-            background: var(--primary-color);
-            color: var(--text-light);
-            font-size: 0.98em;
-            padding: 4px 16px;
-            border-radius: 12px;
-            margin-bottom: 10px;
-            display: inline-block;
-        }
-        .badge-private {
-            background: var(--highlight);
-            color: var(--text-light);
-            font-size: 0.98em;
-            padding: 4px 16px;
-            border-radius: 12px;
-            margin-bottom: 10px;
-            display: inline-block;
-        }
-        .badge-private i {
-            margin-left: 4px;
-        }
-        .room-card .room-count {
-            font-size: 1.1rem;
-            color: var(--text-light);
-            margin-bottom: 18px;
-            font-weight: bold;
-            letter-spacing: 1px;
-        }
-        .room-card .btn-join,
-        .modal-footer .btn-join {
-            background: var(--primary-color);
-            color: #fff !important;
-            border-radius: 8px;
-            min-width: 120px;
-            font-size: 1.1rem;
-            font-weight: bold;
-            margin-top: 10px;
-        }
-        .room-card .btn-join:active,
-        .modal-footer .btn-join:active {
-            filter: brightness(0.95);
-        }
-        .room-card .text-danger {
-            color: var(--highlight);
-            margin-top: 10px;
-            font-size: 1.1rem;
-        }
-        @media (max-width: 1200px) {
-            .room-list-modal {
-                max-width: 98vw;
-                padding: 18px 8px 18px 8px;
-            }
-            .room-card-list {
-                gap: 12px;
-            }
-            .room-card-row {
-                gap: 12px;
-            }
-            .room-card {
-                min-width: 120px;
-                max-width: 100vw;
-                padding: 18px 8px 18px 8px;
-            }
-        }
-        @media (max-width: 900px) {
-            .room-card-row {
-                flex-wrap: wrap;
-            }
-            .room-card {
-                min-width: 40vw;
-                max-width: 48vw;
-            }
-        }
-        @media (max-width: 700px) {
-            .room-card-row {
-                flex-direction: column;
-                gap: 12px;
-            }
-            .room-card {
-                min-width: 90vw;
-                max-width: 98vw;
-            }
-        }
-    </style>
+    <link rel="stylesheet" href="../../assets/css/room_list.css">
+    
 </head>
 <body>
 <div class="container-fluid min-vh-100 d-flex align-items-center justify-content-center">
-    <div class="room-list-modal w-100">
-        <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="room-list-modal w-100" style="max-width:1200px;min-width:900px;">
+        <!-- 返回大廳按鈕（右上角） -->
+        <div class="roomlist-back-lobby">
+            <a href="index.php" class="btn">
+                <i class="fas fa-arrow-left" style="margin-right:7px;"></i>返回大廳
+            </a>
+        </div>
+        <div class="d-flex justify-content-between align-items-center mb-4" style="position:relative;">
             <div class="room-list-title">房間列表</div>
             <div class="d-flex align-items-center gap-3">
                 <form method="get" class="d-flex align-items-center gap-2 mb-0">
@@ -277,6 +136,7 @@ if ($selected_dungeon_id) {
                 <div class="room-card-row">
                     <?php foreach ($row_rooms as $room): ?>
                         <?php
+                        // echo '<pre>'; print_r($room); echo '</pre>';
                         // 查詢目前人數
                         $stmt = $pdo->prepare("SELECT COUNT(*) FROM team_members WHERE team_id = ?");
                         $stmt->execute([$room['team_id']]);
@@ -298,22 +158,34 @@ if ($selected_dungeon_id) {
                                 </div>
                             <?php endif; ?>
                             <?php if ($room['is_public']): ?>
-                                <span class="badge-public">公開房間</span>
-                            <?php else: ?>
-                                <span class="badge-private">私人房間 <i class="bi bi-lock-fill"></i></span>
-                            <?php endif; ?>
-                            <div class="room-count">人數：<b><?php echo $member_count; ?> / <?php echo intval($room['max_members']); ?></b></div>
-                            <?php if ($in_room): ?>
-                                <a href="room.php?code=<?php echo urlencode($room['invite_code']); ?>" class="btn btn-join">回到房間</a>
-                            <?php elseif ($member_count < $room['max_members']): ?>
-                                <?php if ($room['is_public']): ?>
-                                    <a href="room.php?code=<?php echo urlencode($room['invite_code']); ?>" class="btn btn-join">加入房間</a>
+                                    <span class="badge-public">公開房間</span>
                                 <?php else: ?>
-                                    <button type="button" class="btn btn-join" onclick="showPwdModal('<?php echo htmlspecialchars($room['invite_code']); ?>')">加入房間</button>
+                                    <span class="badge-private">私人房間 <i class="bi bi-lock-fill"></i></span>
                                 <?php endif; ?>
-                            <?php else: ?>
-                                <span class="text-danger">已滿</span>
-                            <?php endif; ?>
+
+                                <div class="room-count">人數：<b><?= $member_count; ?> / <?= intval($room['max_members']); ?></b></div>
+
+                                <?php if ($in_room): ?>
+                                    <a href="room.php?code=<?= urlencode($room['invite_code']); ?>" class="btn btn-join">回到房間</a>
+                                <?php elseif ($member_count < $room['max_members']): ?>
+                                    <?php if ($room['is_public']): ?>
+                                        <!-- ✅ 改成 button，並加上 data-code -->
+                                        <button type="button"
+                                                class="btn btn-join"
+                                                data-code="<?= htmlspecialchars($room['invite_code']) ?>">
+                                            加入房間
+                                        </button>
+                                    <?php else: ?>
+                                        <button type="button"
+                                                class="btn btn-join btn-privat"
+                                                onclick="showPwdModal('<?= htmlspecialchars($room['invite_code']) ?>')">
+                                            加入房間
+                                        </button>
+                                    <?php endif; ?>
+                                <?php else: ?>
+                                    <span class="text-danger">已滿</span>
+                                <?php endif; ?>
+
                         </div>
                     <?php endforeach; ?>
                 </div>
@@ -370,29 +242,5 @@ if ($selected_dungeon_id) {
   </div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js"></script>
-<script>
-function showPwdModal(invite_code) {
-    document.getElementById('modalInviteCode').value = invite_code;
-    document.getElementById('modalRoomPassword').value = '';
-    var modal = new bootstrap.Modal(document.getElementById('pwdModal'));
-    modal.show();
-}
-document.getElementById('pwdForm').onsubmit = function(e) {
-    e.preventDefault();
-    var code = document.getElementById('modalInviteCode').value;
-    var pwd = document.getElementById('modalRoomPassword').value;
-    // 送出到 join_room.php，直接帶密碼，不需再輸入房間代碼
-    var form = document.createElement('form');
-    form.method = 'post';
-    form.action = 'join_room.php?code=' + encodeURIComponent(code);
-    var inputPwd = document.createElement('input');
-    inputPwd.type = 'hidden';
-    inputPwd.name = 'room_password';
-    inputPwd.value = pwd;
-    form.appendChild(inputPwd);
-    document.body.appendChild(form);
-    form.submit();
-};
-</script>
-</body>
-</html>
+<script src="../../assets/js/room_list.js"></script>
+

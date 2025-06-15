@@ -3,71 +3,52 @@ session_start();
 require_once __DIR__ . '/../../config/database.php';
 
 $user_id = isset($_SESSION["user_id"]) ? intval($_SESSION["user_id"]) : 0;
-$username = isset($_SESSION["username"]) ? $_SESSION["username"] : "訪客";
+$invite_code = isset($_GET['code']) ? $_GET['code'] : '';
+$room_password = isset($_POST['room_password']) ? trim($_POST['room_password']) : '';
+
+if (!$user_id || !$invite_code) {
+    header("Location: room_list.php");
+    exit;
+}
 
 $db = new Database();
 $pdo = $db->getConnection();
 
-// 只要網址有 code 參數就直接查詢房間，不需再輸入房間代碼
-$invite_code = isset($_GET['code']) ? trim($_GET['code']) : '';
-$room = null;
-$members = [];
-$msg = "";
-$step = 1;
-
 // 查詢房間
-if ($invite_code) {
-    $stmt = $pdo->prepare("SELECT * FROM teams WHERE invite_code = ?");
-    $stmt->execute([$invite_code]);
-    $room = $stmt->fetch(PDO::FETCH_ASSOC);
+$stmt = $pdo->prepare("SELECT * FROM teams WHERE invite_code = ?");
+$stmt->execute([$invite_code]);
+$room = $stmt->fetch(PDO::FETCH_ASSOC);
 
-    if ($room) {
-        // 查詢成員
-        $stmt = $pdo->prepare("SELECT tm.user_id, p.username FROM team_members tm JOIN players p ON tm.user_id = p.player_id WHERE tm.team_id = ?");
-        $stmt->execute([$room['team_id']]);
-        $members = $stmt->fetchAll(PDO::FETCH_ASSOC);
+if (!$room) {
+    header("Location: room_list.php?error=notfound");
+    exit;
+}
 
-        // 檢查是否已加入
-        $already_in = false;
-        foreach ($members as $m) {
-            if ($m['user_id'] == $user_id) $already_in = true;
-        }
+// 檢查密碼
+if (!$room['is_public'] && $room['room_password'] !== $room_password) {
+    header("Location: room_list.php?error=pwd");
+    exit;
+}
 
-        if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['room_password'])) {
-            // 處理密碼送出
-            $input_pwd = trim($_POST['room_password']);
-            if ($already_in) {
-                header("Location: room.php?code=" . urlencode($invite_code));
-                exit;
-            } elseif (count($members) >= $room['max_members']) {
-                $msg = "房間已滿";
-            } elseif ($input_pwd !== $room['room_password']) {
-                $msg = "密碼錯誤";
-            } else {
-                // 密碼正確，加入房間
-                $stmt = $pdo->prepare("INSERT INTO team_members (user_id, team_id) VALUES (?, ?)");
-                $stmt->execute([$user_id, $room['team_id']]);
-                header("Location: room.php?code=" . urlencode($invite_code));
-                exit;
-            }
-            $step = 2;
-        } elseif ($room['is_public']) {
-            // 公開房間直接加入
-            if (!$already_in && count($members) < $room['max_members']) {
-                $stmt = $pdo->prepare("INSERT INTO team_members (user_id, team_id) VALUES (?, ?)");
-                $stmt->execute([$user_id, $room['team_id']]);
-            }
-            header("Location: room.php?code=" . urlencode($invite_code));
-            exit;
-        } else {
-            // 私人房間顯示密碼輸入
-            $step = 2;
-        }
+// 檢查是否已在房間
+$stmt = $pdo->prepare("SELECT 1 FROM team_members WHERE team_id = ? AND user_id = ?");
+$stmt->execute([$room['team_id'], $user_id]);
+if (!$stmt->fetchColumn()) {
+    // 檢查人數上限
+    $stmt = $pdo->prepare("SELECT COUNT(*) FROM team_members WHERE team_id = ?");
+    $stmt->execute([$room['team_id']]);
+    $member_count = $stmt->fetchColumn();
+    if ($member_count < $room['max_members']) {
+        $stmt = $pdo->prepare("INSERT INTO team_members (user_id, team_id, joined_at) VALUES (?, ?, NOW())");
+        $stmt->execute([$user_id, $room['team_id']]);
     } else {
-        $msg = "房間不存在或已被刪除";
-        $step = 1;
+        header("Location: room_list.php?error=full");
+        exit;
     }
 }
+
+header("Location: room.php?code=" . urlencode($invite_code));
+exit;
 ?>
 <!DOCTYPE html>
 <html lang="zh-TW">
@@ -154,6 +135,25 @@ if ($invite_code) {
             <div class="text-center"><a href="index.php" class="btn btn-secondary mt-3">返回大廳</a></div>
         <?php elseif ($room['is_public']): ?>
             <!-- 公開房間不顯示表單，直接導向 -->
+        <?php else: ?>
+            <form method="post">
+                <div class="mb-3">
+                    <label for="roomPassword" class="form-label">房間密碼</label>
+                    <input type="text" class="form-control" id="roomPassword" name="room_password" placeholder="請輸入房間密碼" required>
+                </div>
+                <?php if ($msg): ?>
+                    <div class="alert alert-danger"><?php echo htmlspecialchars($msg); ?></div>
+                <?php endif; ?>
+                <div class="d-flex justify-content-end gap-2 mt-4">
+                    <a href="index.php" class="btn btn-cancel">取消</a>
+                    <button type="submit" class="btn btn-join">加入</button>
+                </div>
+            </form>
+        <?php endif; ?>
+    </div>
+</div>
+</body>
+</html>
         <?php else: ?>
             <form method="post">
                 <div class="mb-3">
