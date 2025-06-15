@@ -77,6 +77,6 @@ if (isset($_SESSION['user_id'])) {
         ?>
     </div>
 </div>
-<script src="../../assets/js/dungeon_list.js"></script>
+
 </body>
 </html>

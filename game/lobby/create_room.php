@@ -125,15 +125,26 @@ $user_id = isset($_SESSION["user_id"]) ? intval($_SESSION["user_id"]) : 0;
     $dungeon_stmt->execute();
     $dungeon_list = $dungeon_stmt->fetchAll(PDO::FETCH_ASSOC);
 
+    // 查詢玩家已解鎖的副本 id（第一關預設開放，其餘需查 player_dungeon_records）
+    $unlocked_dungeon_ids = [];
+    if ($user_id) {
+        $stmt = $pdo->prepare("SELECT dungeon_id FROM player_dungeon_records WHERE player_id = ?");
+        $stmt->execute([$user_id]);
+        $unlocked_dungeon_ids = $stmt->fetchAll(PDO::FETCH_COLUMN);
+    }
+
     // 取得預設選擇
     $selected_dungeon_id = isset($_GET['dungeon_id']) ? intval($_GET['dungeon_id']) : ($dungeon_list[0]['id'] ?? 0);
     ?>
     <form method="get" class="dungeon-select-bar mb-4">
         <label for="dungeon_id">選擇副本：</label>
         <select name="dungeon_id" id="dungeon_id" onchange="this.form.submit()">
-            <?php foreach ($dungeon_list as $d): ?>
-                <option value="<?= $d['id'] ?>" <?= $selected_dungeon_id == $d['id'] ? 'selected' : '' ?>>
-                    <?= htmlspecialchars($d['name']) ?>
+            <?php foreach ($dungeon_list as $idx => $d): 
+                // 第一關(索引0)永遠可選，其餘需解鎖
+                $isUnlocked = ($idx === 0) || in_array($d['id'], $unlocked_dungeon_ids);
+            ?>
+                <option value="<?= $d['id'] ?>" <?= $selected_dungeon_id == $d['id'] ? 'selected' : '' ?> <?= $isUnlocked ? '' : 'disabled' ?>>
+                    <?= htmlspecialchars($d['name']) ?><?= $isUnlocked ? '' : '（已鎖定）' ?>
                 </option>
             <?php endforeach; ?>
         </select>
@@ -213,6 +224,16 @@ document.addEventListener('DOMContentLoaded', function () {
             Swal.fire({icon:'error', title:'建立失敗', text: err.message || '連線失敗'});
         });
     });
+
+    // 顯示鎖定副本的提示
+    var select = document.getElementById('dungeon_id');
+    if (select) {
+        for (var i = 0; i < select.options.length; i++) {
+            if (select.options[i].disabled) {
+                select.options[i].style.color = '#aaa';
+            }
+        }
+    }
 });
 </script>
 </body>
