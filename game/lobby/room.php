@@ -194,10 +194,10 @@ if (
                                 <input type="hidden" name="kick_user_id" value="<?php echo $m['user_id']; ?>">
                                 <button type="submit" class="btn btn-kick btn-sm">踢除</button>
                             </form>
-                            <form method="post" style="display:inline;">
+                            <!-- <form method="post" style="display:inline;">
                                 <input type="hidden" name="transfer_owner_id" value="<?php echo $m['user_id']; ?>">
                                 <button type="submit" class="btn btn-transfer btn-sm">轉讓房主</button>
-                            </form>
+                            </form> -->
                         <?php endif; ?>
                     </div>
                 <?php endforeach; ?>
@@ -323,10 +323,10 @@ setInterval(function() {
                                 <input type="hidden" name="kick_user_id" value="<?php echo $m['user_id']; ?>">
                                 <button type="submit" class="btn btn-kick btn-sm">踢除</button>
                             </form>
-                            <form method="post" style="display:inline;">
+                            <!-- <form method="post" style="display:inline;">
                                 <input type="hidden" name="transfer_owner_id" value="<?php echo $m['user_id']; ?>">
                                 <button type="submit" class="btn btn-transfer btn-sm">轉讓房主</button>
-                            </form>
+                            </form> -->
                         <?php endif; ?>
                     </div>
                 <?php endforeach; ?>
