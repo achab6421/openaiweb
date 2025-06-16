@@ -54,7 +54,7 @@ try {
             ]);
         } else {
             // 密碼不正確
-            echo json_encode(['success' => false, 'message' => '密碼不正確']);
+            echo json_encode(['success' => false, 'message' => '密語不正確']);
         }
     } else {
         // 帳號不存在

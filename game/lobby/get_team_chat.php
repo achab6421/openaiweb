@@ -5,14 +5,14 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script>
 const firebaseConfig = {
-   apiKey: "AIzaSyCCLkT0VSweTF1-w_ecMybR7WdnvHs0oKA",
-      authDomain: "openai-dbd3b.firebaseapp.com",
-      databaseURL: "https://openai-dbd3b-default-rtdb.asia-southeast1.firebasedatabase.app",
-      projectId: "openai-dbd3b",
-      storageBucket: "openai-dbd3b.appspot.com",
-      messagingSenderId: "977828405782",
-      appId: "1:977828405782:web:eeb71ec2d11c7edfa10b37",
-      measurementId: "G-Y5DJ7B9LXM"
+    apiKey: "AIzaSyCCLkT0VSweTF1-w_ecMybR7WdnvHs0oKA",
+    authDomain: "openai-dbd3b.firebaseapp.com",
+    databaseURL: "https://openai-dbd3b-default-rtdb.asia-southeast1.firebasedatabase.app",
+    projectId: "openai-dbd3b",
+    storageBucket: "openai-dbd3b.appspot.com",
+    messagingSenderId: "977828405782",
+    appId: "1:977828405782:web:eeb71ec2d11c7edfa10b37",
+    measurementId: "G-Y5DJ7B9LXM"
 };
 firebase.initializeApp(firebaseConfig);
 firebase.auth().signInAnonymously().catch(console.error);
