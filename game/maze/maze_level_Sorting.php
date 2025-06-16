@@ -84,7 +84,7 @@ if ($is_ajax) {
 （對應的正確輸出）
 
 選項:
-只產生一個選項，為正確程式碼拆成多行，每行加上行號，並將行號順序打亂後排列（從1開始），例如：
+只產生一個選項，為正確程式碼拆成多行，每行加上行號，縮排用\t顯示，並將行號順序打亂後排列（從1開始，禁止出現123456等情況），例如：
 
 3.\tprint("這是奇數")
 1.num = int(input("請輸入一個整數："))
@@ -194,7 +194,7 @@ EOT;
     $options_arr = [];
     $lines = explode("\n", $options);
     foreach ($lines as $line) {
-        if (preg_match('/^(\d+)[\.:：]\s*(.*)$/', $line, $matches)) {
+        if (preg_match('/^(\d+)[\.:：](.*)$/', $line, $matches)) {
             $key = $matches[1];
             $code = $matches[2];
             $options_arr[$key] = $code;
@@ -313,9 +313,12 @@ if ($current_level < $level_info['required']) {
                     }
                     // --- end ---
                     if (data.options_arr && Object.keys(data.options_arr).length > 0) {
+                        let optionsEntries = Object.entries(data.options_arr);
+                        optionsEntries.sort(() => Math.random() - 0.5); // 簡單亂序
+
                         let html = '<div class="card-header bg-warning text-dark fw-bold">選項</div>';
                         html += '<div class="card-body"><form class="mt-2" id="sortableForm"><ul id="sortable-options" class="list-group">';
-                        for (const label in data.options_arr) {
+                        for (const [label, code] of optionsEntries) {
                             let code = data.options_arr[label]
                                 .replace(/\t/g, '&nbsp;&nbsp;&nbsp;&nbsp;')
                                 .replace(/^([ ]+)/gm, function(m) {
