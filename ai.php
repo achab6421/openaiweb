@@ -299,7 +299,7 @@ EOT;
                 chatInput.value = '';
 
                 // 第一次先請 AI 產生建議問題，再請 AI 正常回答
-                fetch('/OPENAI/ai_proxy.php', {
+                fetch('/OPENAIWEB/ai_proxy.php', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
@@ -324,7 +324,7 @@ EOT;
                         renderSuggestedQuestions(data.suggested_questions);
                     }
                     // 再請 AI 正常回答（不帶 suggest_questions）
-                    return fetch('/OPENAI/ai_proxy.php', {
+                    return fetch('/OPENAIWEB/ai_proxy.php', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json'

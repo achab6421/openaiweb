@@ -168,7 +168,7 @@ try {
                 <ul>
                     <li><a href="dashboard.php" class="active">主頁</a></li>
                     <li><a href="profile.php">獵人檔案</a></li>
-                    <li><a href="achievements.php">成就系統</a></li>
+                    <!-- <li><a href="achievements.php">成就系統</a></li> -->
                     <li><a href="game/maze/index.php">秘密任務</a></li>
                     <li><a href="game/lobby/index.php">多人副本</a></li>
                     <li><a href="api/logout.php">登出</a></li>
