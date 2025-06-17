@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- 主機： 127.0.0.1
--- 產生時間： 2025-06-16 07:38:17
+-- 產生時間： 2025-06-17 10:21:15
 -- 伺服器版本： 8.3.0
 -- PHP 版本： 8.0.30
 
@@ -250,26 +250,28 @@ CREATE TABLE `players` (
   `base_hp` int NOT NULL DEFAULT '100',
   `level` int NOT NULL DEFAULT '1',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `experience` int NOT NULL DEFAULT '0'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- 傾印資料表的資料 `players`
 --
 
-INSERT INTO `players` (`player_id`, `username`, `account`, `password`, `completed_levels`, `completed_learning_levels`, `attack_power`, `base_hp`, `level`, `created_at`, `updated_at`) VALUES
-(1, '怪獸獵人', 'hunter', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '[]', '[]', 15, 120, 3, '2025-06-10 19:21:23', '2025-06-10 19:21:23'),
-(2, 'Python新手', 'newbie', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '[]', '[]', 10, 100, 1, '2025-06-10 19:21:23', '2025-06-10 19:21:23'),
-(3, '程式大師', 'master', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '[]', '[]', 25, 200, 8, '2025-06-10 19:21:23', '2025-06-10 19:21:23'),
-(4, 'snow', '41241443', '$2y$10$E6hu6vxGkjHkguJw8qVtFuRcNsKeJweM18ULdU1ck3qbk7/1Q.UU2', '[]', '[]', 10, 100, 1, '2025-06-10 19:22:10', '2025-06-10 19:22:10'),
-(5, '恩', '41241411', '$2y$10$yZ7HkVqA39zTPofWAhd1NewWDoCkYNf7V20TiiGLNSadDOpGtPpau', '[]', '[]', 10, 100, 1, '2025-06-10 20:01:10', '2025-06-10 20:01:10'),
-(6, '邱子晏', 'snow', '$2y$10$001fYtBMCCQR4jbsDaxOROBEq.tHmZwoasKTpfrKDOztfyESSOZG2', '[]', '[]', 10, 100, 1, '2025-06-11 14:56:34', '2025-06-11 14:56:34'),
-(7, '綺', '11', '$2y$10$KcMtzGi1SACQLLgpM.I/cOcsd0wEJFrqbaiEEpb8IjkVLxriYIwJ2', '[]', '[]', 10, 100, 10, '2025-06-12 13:15:37', '2025-06-15 00:49:20'),
-(8, '邱子晏qq', 'qe', '$2y$10$tQ8tV1SXjf2GOybCL7d7F.LjPPtB5fIgBucRnjnn04cq4DyfRmHde', '[]', '[]', 10, 100, 1, '2025-06-13 09:21:46', '2025-06-13 09:21:46'),
-(9, 'qeqe', 'qqq', '$2y$10$KsTb5Nd96sAWrtIc077KTuj9.JWisvk2dDwX.V1eAYogUorlEwriO', '[]', '[]', 10, 100, 1, '2025-06-13 09:22:04', '2025-06-13 09:22:04'),
-(10, '123123', '123123', '$2y$10$n722HoMnwTCyLRpr4LNdze9OqV.7Dd0rS4fjkIYy71.XVLv9D4Qjy', '[]', '[]', 10, 100, 1, '2025-06-15 10:10:13', '2025-06-15 10:10:13'),
-(11, '我是你爹', 'admin', '$2y$10$o6lWMOlWGNkHGVU3ynwFSeNKAFio0LA/dVkBfzAfqUZ8gRRKZn70m', '[]', '[]', 10, 100, 1, '2025-06-15 14:41:06', '2025-06-15 14:41:06'),
-(12, 'Eva', 'Eva', '$2y$10$6jXHIbrNmQZsEZBK6Ps16O5JRlgNLihky4tPc4XV9BT2Ss2t1lre6', '[]', '[]', 10, 100, 1, '2025-06-15 14:45:17', '2025-06-15 14:45:17');
+INSERT INTO `players` (`player_id`, `username`, `account`, `password`, `completed_levels`, `completed_learning_levels`, `attack_power`, `base_hp`, `level`, `created_at`, `updated_at`, `experience`) VALUES
+(1, '怪獸獵人', 'hunter', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '[]', '[]', 15, 120, 3, '2025-06-10 19:21:23', '2025-06-10 19:21:23', 0),
+(2, 'Python新手', 'newbie', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '[]', '[]', 10, 100, 1, '2025-06-10 19:21:23', '2025-06-10 19:21:23', 0),
+(3, '程式大師', 'master', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', '[]', '[]', 25, 200, 8, '2025-06-10 19:21:23', '2025-06-10 19:21:23', 0),
+(4, 'snow', '41241443', '$2y$10$E6hu6vxGkjHkguJw8qVtFuRcNsKeJweM18ULdU1ck3qbk7/1Q.UU2', '[]', '[]', 10, 100, 1, '2025-06-10 19:22:10', '2025-06-10 19:22:10', 0),
+(5, '恩', '41241411', '$2y$10$yZ7HkVqA39zTPofWAhd1NewWDoCkYNf7V20TiiGLNSadDOpGtPpau', '[]', '[]', 10, 100, 1, '2025-06-10 20:01:10', '2025-06-10 20:01:10', 0),
+(6, '邱子晏', 'snow', '$2y$10$001fYtBMCCQR4jbsDaxOROBEq.tHmZwoasKTpfrKDOztfyESSOZG2', '[]', '[]', 10, 100, 1, '2025-06-11 14:56:34', '2025-06-11 14:56:34', 0),
+(7, '綺', '11', '$2y$10$KcMtzGi1SACQLLgpM.I/cOcsd0wEJFrqbaiEEpb8IjkVLxriYIwJ2', '[]', '[]', 17, 109, 10, '2025-06-12 13:15:37', '2025-06-16 14:00:52', 0),
+(8, '邱子晏qq', 'qe', '$2y$10$tQ8tV1SXjf2GOybCL7d7F.LjPPtB5fIgBucRnjnn04cq4DyfRmHde', '[]', '[]', 10, 100, 1, '2025-06-13 09:21:46', '2025-06-13 09:21:46', 0),
+(9, 'qeqe', 'qqq', '$2y$10$KsTb5Nd96sAWrtIc077KTuj9.JWisvk2dDwX.V1eAYogUorlEwriO', '[]', '[]', 10, 100, 1, '2025-06-13 09:22:04', '2025-06-13 09:22:04', 0),
+(10, '123123', '123123', '$2y$10$n722HoMnwTCyLRpr4LNdze9OqV.7Dd0rS4fjkIYy71.XVLv9D4Qjy', '[]', '[]', 10, 100, 2, '2025-06-15 10:10:13', '2025-06-17 08:02:35', 0),
+(11, '我是你爹', 'admin', '$2y$10$o6lWMOlWGNkHGVU3ynwFSeNKAFio0LA/dVkBfzAfqUZ8gRRKZn70m', '[]', '[]', 10, 100, 1, '2025-06-15 14:41:06', '2025-06-15 14:41:06', 0),
+(12, 'Eva', 'Eva', '$2y$10$6jXHIbrNmQZsEZBK6Ps16O5JRlgNLihky4tPc4XV9BT2Ss2t1lre6', '[]', '[]', 10, 100, 1, '2025-06-15 14:45:17', '2025-06-15 14:45:17', 0),
+(13, '412414431', '412414431', '$2y$10$URzzaeN6QJAVyYBex8NCROMytoRNvezzo2e.AJL4JACNTpmI74Oqm', '[]', '[]', 1000, 100, 1, '2025-06-17 08:06:20', '2025-06-17 08:08:00', 0);
 
 --
 -- 觸發器 `players`
@@ -376,7 +378,13 @@ INSERT INTO `player_chapter_records` (`record_id`, `player_id`, `chapter_id`, `i
 (79, 12, 3, 0, 0, '2025-06-15 14:45:17', '2025-06-15 14:45:17'),
 (80, 12, 4, 0, 0, '2025-06-15 14:45:17', '2025-06-15 14:45:17'),
 (81, 12, 5, 0, 0, '2025-06-15 14:45:17', '2025-06-15 14:45:17'),
-(82, 12, 6, 0, 0, '2025-06-15 14:45:17', '2025-06-15 14:45:17');
+(82, 12, 6, 0, 0, '2025-06-15 14:45:17', '2025-06-15 14:45:17'),
+(84, 13, 1, 0, 1, '2025-06-17 08:06:20', '2025-06-17 08:06:20'),
+(85, 13, 2, 0, 0, '2025-06-17 08:06:20', '2025-06-17 08:06:20'),
+(86, 13, 3, 0, 0, '2025-06-17 08:06:20', '2025-06-17 08:06:20'),
+(87, 13, 4, 0, 0, '2025-06-17 08:06:20', '2025-06-17 08:06:20'),
+(88, 13, 5, 0, 0, '2025-06-17 08:06:20', '2025-06-17 08:06:20'),
+(89, 13, 6, 0, 0, '2025-06-17 08:06:20', '2025-06-17 08:06:20');
 
 -- --------------------------------------------------------
 
@@ -392,7 +400,76 @@ CREATE TABLE `player_dungeon_records` (
   `progress` int DEFAULT '0',
   `started_at` datetime DEFAULT CURRENT_TIMESTAMP,
   `completed_at` datetime DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci ;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+-- --------------------------------------------------------
+
+--
+-- 資料表結構 `player_level_experience`
+--
+
+CREATE TABLE `player_level_experience` (
+  `level` int NOT NULL,
+  `required_exp` int NOT NULL,
+  `level_attribute_bonus` float NOT NULL DEFAULT '1.05',
+  `description` varchar(100) COLLATE utf8mb4_unicode_ci DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- 傾印資料表的資料 `player_level_experience`
+--
+
+INSERT INTO `player_level_experience` (`level`, `required_exp`, `level_attribute_bonus`, `description`) VALUES
+(1, 0, 1, '初學者'),
+(2, 100, 1.05, '見習程式員'),
+(3, 250, 1.05, '初級程式員'),
+(4, 450, 1.05, '業餘程式員'),
+(5, 700, 1.08, '進階程式員'),
+(6, 1000, 1.08, '熟練程式員'),
+(7, 1400, 1.08, '專業程式員'),
+(8, 1900, 1.08, '資深程式員'),
+(9, 2500, 1.1, '專家程式員'),
+(10, 3200, 1.1, '程式大師'),
+(11, 4000, 1.08, '程式魔法師'),
+(12, 4900, 1.08, '程式奇才'),
+(13, 5900, 1.08, '程式巫師'),
+(14, 7000, 1.08, '程式煉金師'),
+(15, 8200, 1.1, '程式賢者'),
+(16, 9500, 1.08, '代碼工匠'),
+(17, 10900, 1.08, '代碼建築師'),
+(18, 12400, 1.08, '演算法專家'),
+(19, 14000, 1.08, '演算法大師'),
+(20, 15700, 1.12, '代碼傳奇'),
+(21, 17500, 1.08, '程式領主'),
+(22, 19400, 1.08, '代碼領主'),
+(23, 21400, 1.08, '程式霸主'),
+(24, 23500, 1.08, '代碼霸主'),
+(25, 25700, 1.1, '程式王者'),
+(26, 28000, 1.08, '代碼王者'),
+(27, 30400, 1.08, '程式宗師'),
+(28, 32900, 1.08, '代碼宗師'),
+(29, 35500, 1.08, '編程皇帝'),
+(30, 38200, 1.15, '程式之神'),
+(31, 41000, 1.08, '神級程式員'),
+(32, 44000, 1.08, '神級碼農'),
+(33, 47200, 1.08, '程式傀儡師'),
+(34, 50600, 1.08, '程式支配者'),
+(35, 54200, 1.1, '程式創造者'),
+(36, 58000, 1.08, '程式元素師'),
+(37, 62000, 1.08, '代碼咒術師'),
+(38, 66200, 1.08, '代碼審判官'),
+(39, 70600, 1.08, '代碼執行者'),
+(40, 75200, 1.12, '代碼之王'),
+(41, 80000, 1.08, '程式帝王'),
+(42, 85000, 1.08, '代碼帝王'),
+(43, 90200, 1.08, '程式帝尊'),
+(44, 95600, 1.08, '代碼帝尊'),
+(45, 101200, 1.1, '程式聖主'),
+(46, 107000, 1.08, '代碼聖主'),
+(47, 113000, 1.08, '程式天尊'),
+(48, 119200, 1.08, '代碼天尊'),
+(49, 125600, 1.08, '程式主宰'),
+(50, 132300, 1.15, '終極程式師');
 
 -- --------------------------------------------------------
 
@@ -432,7 +509,10 @@ INSERT INTO `player_level_records` (`record_id`, `player_id`, `level_id`, `attem
 (15, 9, 1, 0, 0, '2025-06-13 11:07:25', '2025-06-13 11:07:25'),
 (16, 7, 1, 0, 0, '2025-06-14 11:28:00', '2025-06-14 11:28:00'),
 (17, 12, 1, 0, 0, '2025-06-15 15:11:53', '2025-06-15 15:11:53'),
-(18, 11, 1, 0, 0, '2025-06-15 15:16:17', '2025-06-15 15:16:17');
+(18, 11, 1, 0, 0, '2025-06-15 15:16:17', '2025-06-15 15:16:17'),
+(19, 10, 1, 0, 0, '2025-06-16 17:11:42', '2025-06-16 17:11:42'),
+(20, 13, 1, 0, 1, '2025-06-17 08:07:35', '2025-06-17 08:11:42'),
+(21, 13, 2, 0, 0, '2025-06-17 08:11:42', '2025-06-17 08:11:42');
 
 -- --------------------------------------------------------
 
@@ -483,7 +563,8 @@ INSERT INTO `teams` (`team_id`, `invite_code`, `max_members`, `is_public`, `crea
 (68, 'HM8E6ZUL', 4, 0, '2025-06-15 11:59:09', '2025-06-15 11:59:09', 'C', '123', 1),
 (69, 'SW6Y5EVD', 4, 1, '2025-06-15 11:59:16', '2025-06-15 11:59:16', 'W', NULL, 1),
 (71, 'NTE2U956', 4, 0, '2025-06-15 12:45:06', '2025-06-15 12:45:06', 'ad', '22', 1),
-(72, 'SEM7K9ZL', 4, 1, '2025-06-15 13:35:25', '2025-06-15 13:35:25', '123', NULL, 1);
+(72, 'SEM7K9ZL', 4, 1, '2025-06-15 13:35:25', '2025-06-15 13:35:25', '123', NULL, 1),
+(74, 'UJRXYZCP', 2, 0, '2025-06-16 14:01:27', '2025-06-16 14:01:27', '123', '123', 1);
 
 -- --------------------------------------------------------
 
@@ -508,7 +589,8 @@ INSERT INTO `team_members` (`member_id`, `user_id`, `team_id`, `joined_at`) VALU
 (56, 7, 68, '2025-06-15 12:44:03'),
 (59, 10, 71, '2025-06-15 12:45:06'),
 (61, 10, 72, '2025-06-15 13:35:25'),
-(74, 7, 72, '2025-06-16 05:18:14');
+(74, 7, 72, '2025-06-16 05:18:14'),
+(82, 7, 74, '2025-06-16 14:01:27');
 
 -- --------------------------------------------------------
 
@@ -528,7 +610,8 @@ CREATE TABLE `user_progress` (
 --
 
 INSERT INTO `user_progress` (`id`, `user_id`, `level_id`, `completed_at`) VALUES
-(1, '11', 1, '2025-06-15 23:26:56');
+(1, '11', 1, '2025-06-15 23:26:56'),
+(2, '13', 1, '2025-06-17 16:11:42');
 
 --
 -- 已傾印資料表的索引
@@ -598,6 +681,12 @@ ALTER TABLE `player_dungeon_records`
   ADD PRIMARY KEY (`id`),
   ADD KEY `player_id` (`player_id`),
   ADD KEY `dungeon_id` (`dungeon_id`);
+
+--
+-- 資料表索引 `player_level_experience`
+--
+ALTER TABLE `player_level_experience`
+  ADD PRIMARY KEY (`level`);
 
 --
 -- 資料表索引 `player_level_records`
@@ -684,13 +773,13 @@ ALTER TABLE `monsters`
 -- 使用資料表自動遞增(AUTO_INCREMENT) `players`
 --
 ALTER TABLE `players`
-  MODIFY `player_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
+  MODIFY `player_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=14;
 
 --
 -- 使用資料表自動遞增(AUTO_INCREMENT) `player_chapter_records`
 --
 ALTER TABLE `player_chapter_records`
-  MODIFY `record_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=84;
+  MODIFY `record_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=91;
 
 --
 -- 使用資料表自動遞增(AUTO_INCREMENT) `player_dungeon_records`
@@ -702,7 +791,7 @@ ALTER TABLE `player_dungeon_records`
 -- 使用資料表自動遞增(AUTO_INCREMENT) `player_level_records`
 --
 ALTER TABLE `player_level_records`
-  MODIFY `record_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=19;
+  MODIFY `record_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=22;
 
 --
 -- 使用資料表自動遞增(AUTO_INCREMENT) `player_special_effects`
@@ -714,19 +803,19 @@ ALTER TABLE `player_special_effects`
 -- 使用資料表自動遞增(AUTO_INCREMENT) `teams`
 --
 ALTER TABLE `teams`
-  MODIFY `team_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=74;
+  MODIFY `team_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=75;
 
 --
 -- 使用資料表自動遞增(AUTO_INCREMENT) `team_members`
 --
 ALTER TABLE `team_members`
-  MODIFY `member_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=82;
+  MODIFY `member_id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=83;
 
 --
 -- 使用資料表自動遞增(AUTO_INCREMENT) `user_progress`
 --
 ALTER TABLE `user_progress`
-  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- 已傾印資料表的限制式
