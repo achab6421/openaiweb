@@ -29,8 +29,8 @@ body {
 
 /* 首頁登陸頁樣式 */
 .landing-page {
-    background-image: url('../images/dungeon-landing-bg.jpg');
-    background-size: cover;
+    background-image: url('../images/dungeon-landing-bg.gif');
+    background-size: 1500px;
     background-position: center;
     height: 100vh;
     display: flex;
