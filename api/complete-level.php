@@ -18,55 +18,7 @@ if (!$levelId || !$chapterId) {
     exit;
 }
 
-// 標記關卡完成
-$stmt = $db->prepare("UPDATE player_level_records SET success_count = success_count + 1 WHERE player_id = ? AND level_id = ?");
-$stmt->execute([$userId, $levelId]);
-
-// 查詢下一關
-$nextLevelStmt = $db->prepare("SELECT level_id FROM levels WHERE chapter_id = ? AND level_id > ? ORDER BY level_id ASC LIMIT 1");
-$nextLevelStmt->execute([$chapterId, $levelId]);
-$nextLevel = $nextLevelStmt->fetch(PDO::FETCH_ASSOC);
-
-// 若有下一關，解鎖
-$unlockedLevels = [];
-if ($nextLevel) {
-    $nextLevelId = $nextLevel['level_id'];
-    // 檢查是否已存在紀錄
-    $checkStmt = $db->prepare("SELECT * FROM player_level_records WHERE player_id = ? AND level_id = ?");
-    $checkStmt->execute([$userId, $nextLevelId]);
-    if ($checkStmt->rowCount() == 0) {
-        // 新增紀錄並解鎖
-        $insertStmt = $db->prepare("INSERT INTO player_level_records (player_id, level_id, attempt_count, success_count) VALUES (?, ?, 0, 0)");
-        $insertStmt->execute([$userId, $nextLevelId]);
-    }
-    $unlockedLevels[] = $nextLevelId;
-}
-
-// 若本章節所有關卡皆完成，標記章節完成
-$allLevelsStmt = $db->prepare("SELECT level_id FROM levels WHERE chapter_id = ?");
-$allLevelsStmt->execute([$chapterId]);
-$allLevelIds = $allLevelsStmt->fetchAll(PDO::FETCH_COLUMN);
-
-$completedStmt = $db->prepare("SELECT level_id FROM player_level_records WHERE player_id = ? AND success_count > 0 AND level_id IN (" . implode(',', $allLevelIds) . ")");
-$completedStmt->execute([$userId]);
-$completedLevelIds = $completedStmt->fetchAll(PDO::FETCH_COLUMN);
-
-$completedChapter = false;
-if (count($allLevelIds) > 0 && count($allLevelIds) === count($completedLevelIds)) {
-    // 標記章節完成
-    $updateChapterStmt = $db->prepare("UPDATE player_chapter_records SET is_completed = 1 WHERE player_id = ? AND chapter_id = ?");
-    $updateChapterStmt->execute([$userId, $chapterId]);
-    $completedChapter = $chapterId;
-}
-
-// 經驗值獎勵與升級邏輯略（如有需要可補充）
-
-echo json_encode([
-    'success' => true,
-    'unlockedLevels' => $unlockedLevels,
-    'completedChapter' => $completedChapter
-]);
-?>
+try {
     // 確保 experience 列存在
     try {
         $checkColumnQuery = "SHOW COLUMNS FROM players LIKE 'experience'";
@@ -244,36 +196,22 @@ function unlockNextLevels($db, $currentLevelId, $userId) {
             $insertRecordStmt = $db->prepare($insertRecordQuery);
             $insertRecordStmt->execute([$userId, $unlockedLevelId]);
             
-            // 更新玩家的已解鎖關卡列表 (添加到 JSON)
-            $playerQuery = "SELECT completed_levels FROM players WHERE player_id = ?";
-            $playerStmt = $db->prepare($playerQuery);
-            $playerStmt->execute([$userId]);
-            $player = $playerStmt->fetch(PDO::FETCH_ASSOC);
+            // 檢查是否需要解鎖章節
+            $checkChapterQuery = "SELECT * FROM player_chapter_records 
+                                WHERE player_id = ? AND chapter_id = ?";
+            $checkChapterStmt = $db->prepare($checkChapterQuery);
+            $checkChapterStmt->execute([$userId, $chapterId]);
             
-            $completedLevels = json_decode($player['completed_levels'] ?? '[]', true);
-            if (!in_array($unlockedLevelId, $completedLevels)) {
-                $completedLevels[] = $unlockedLevelId;
-                
-                $updatePlayerQuery = "UPDATE players 
-                                     SET completed_levels = ? 
-                                     WHERE player_id = ?";
-                $updatePlayerStmt = $db->prepare($updatePlayerQuery);
-                $updatePlayerStmt->execute([json_encode($completedLevels), $userId]);
+            if ($checkChapterStmt->rowCount() == 0) {
+                $unlockChapterQuery = "INSERT INTO player_chapter_records 
+                                     (player_id, chapter_id, is_completed) 
+                                     VALUES (?, ?, 0)";
+                $unlockChapterStmt = $db->prepare($unlockChapterQuery);
+                $unlockChapterStmt->execute([$userId, $chapterId]);
             }
+            
+            $unlockedLevels[] = $unlockedLevelId;
         }
-        
-        // 獲取關卡名稱
-        $levelNameQuery = "SELECT * FROM levels WHERE level_id = ?";
-        $levelNameStmt = $db->prepare($levelNameQuery);
-        $levelNameStmt->execute([$unlockedLevelId]);
-        $levelInfo = $levelNameStmt->fetch(PDO::FETCH_ASSOC);
-        
-        // 添加到解鎖列表
-        $unlockedLevels[] = [
-            'id' => $unlockedLevelId,
-            'chapter_id' => $chapterId,
-            'name' => "關卡 #" . $unlockedLevelId // 可根據實際情況修改
-        ];
     }
     
     return $unlockedLevels;
@@ -281,28 +219,89 @@ function unlockNextLevels($db, $currentLevelId, $userId) {
 
 /**
  * 檢查章節是否已完成
+ * @param PDO $db 資料庫連接
+ * @param int $chapterId 章節ID
+ * @param int $userId 玩家ID
+ * @return bool|int 如果章節完成返回章節ID，否則返回false
  */
 function checkChapterCompletion($db, $chapterId, $userId) {
-    if (!$chapterId) return null;
-    
     // 獲取章節中的所有關卡
-    $levelsQuery = "SELECT level_id FROM levels WHERE chapter_id = ?";
-    $levelsStmt = $db->prepare($levelsQuery);
-    $levelsStmt->execute([$chapterId]);
+    $allLevelsStmt = $db->prepare("SELECT level_id FROM levels WHERE chapter_id = ?");
+    $allLevelsStmt->execute([$chapterId]);
+    $allLevelIds = $allLevelsStmt->fetchAll(PDO::FETCH_COLUMN);
     
-    $levelIds = [];
-    while ($level = $levelsStmt->fetch(PDO::FETCH_ASSOC)) {
-        $levelIds[] = $level['level_id'];
+    if (empty($allLevelIds)) {
+        return false;
     }
     
-    if (empty($levelIds)) return null;
+    // 獲取玩家已完成的該章節關卡
+    $placeholders = str_repeat('?,', count($allLevelIds) - 1) . '?';
+    $completedStmt = $db->prepare("SELECT level_id FROM player_level_records 
+                                  WHERE player_id = ? AND success_count > 0 
+                                  AND level_id IN ($placeholders)");
+    $params = array_merge([$userId], $allLevelIds);
+    $completedStmt->execute($params);
+    $completedLevelIds = $completedStmt->fetchAll(PDO::FETCH_COLUMN);
     
-    // 獲取玩家已完成的關卡
-    $playerQuery = "SELECT completed_levels FROM players WHERE player_id = ?";
-    $playerStmt = $db->prepare($playerQuery);
+    // 判斷是否所有關卡都已完成
+    if (count($allLevelIds) > 0 && count($allLevelIds) === count($completedLevelIds)) {
+        // 標記章節完成
+        $updateChapterStmt = $db->prepare("UPDATE player_chapter_records 
+                                         SET is_completed = 1 
+                                         WHERE player_id = ? AND chapter_id = ?");
+        $updateChapterStmt->execute([$userId, $chapterId]);
+        return $chapterId;
+    }
+    
+    return false;
+}
+
+/**
+ * 增加經驗值並檢查是否升級
+ * @param PDO $db 資料庫連接
+ * @param int $userId 玩家ID
+ * @param int $expAmount 獲得的經驗值
+ * @return array 升級信息
+ */
+function addExperienceAndCheckLevelUp($db, $userId, $expAmount) {
+    // 獲取玩家當前等級和經驗值
+    $playerStmt = $db->prepare("SELECT level, experience FROM players WHERE player_id = ?");
     $playerStmt->execute([$userId]);
-    $player = $playerStmt->fetch(PDO::FETCH_ASSOC);
+    $playerData = $playerStmt->fetch(PDO::FETCH_ASSOC);
     
+    if (!$playerData) {
+        throw new Exception("玩家數據不存在");
+    }
+    
+    $currentLevel = $playerData['level'] ?? 1;
+    $currentExp = $playerData['experience'] ?? 0;
+    $newExp = $currentExp + $expAmount;
+    
+    // 計算升級所需經驗值
+    $expToNextLevel = 100 * $currentLevel; // 簡單計算：下一級所需經驗 = 當前等級 * 100
+    $levelUp = false;
+    $newLevel = $currentLevel;
+    
+    // 檢查是否升級
+    while ($newExp >= $expToNextLevel) {
+        $newExp -= $expToNextLevel;
+        $newLevel++;
+        $expToNextLevel = 100 * $newLevel;
+        $levelUp = true;
+    }
+    
+    // 更新玩家資料
+    $updateStmt = $db->prepare("UPDATE players SET level = ?, experience = ? WHERE player_id = ?");
+    $updateStmt->execute([$newLevel, $newExp, $userId]);
+    
+    return [
+        'levelUp' => $levelUp,
+        'newLevel' => $newLevel,
+        'currentExp' => $newExp,
+        'expToNextLevel' => $expToNextLevel
+    ];
+}
+?>
     $completedLevels = json_decode($player['completed_levels'] ?? '[]', true);
     
     // 檢查是否所有章節關卡都已完成
